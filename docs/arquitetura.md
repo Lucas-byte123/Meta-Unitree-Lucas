@@ -1,6 +1,6 @@
-# Arquitetura
+# Arquitetura (esboço)
 
-> Como o gesto sai da mão e chega no robô. Atualizado em 28/09/2026.
+> **Esboço.** Como o gesto sai da mão e chega no robô, do jeito que está pensado hoje. Pode mudar quando começar a implementação. Atualizado em 28/09/2026.
 
 ## Objetivo
 

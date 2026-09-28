@@ -30,7 +30,7 @@ Apontar para um ponto no chão e o Go2 andar até lá. O projeto aberto [spectac
   <sub>GIF do projeto <a href="https://github.com/V4C38/spectacles-dimensional-os">spectacles-dimensional-os</a> (© 2026 spectacles-dimensional-os contributors, licença MIT). Não é deste repositório.</sub>
 </p>
 
-## Como funciona
+## Como funciona (esboço)
 
 ```mermaid
 flowchart TD
@@ -45,7 +45,7 @@ flowchart TD
 | Parte | Situação |
 |---|---|
 | Pesquisa de SDKs, simulação e projetos parecidos | Feita e conferida |
-| Arquitetura | Definida |
+| Arquitetura | Esboço |
 | Ponte WebSocket -> SDK Unitree | Escrita, testada só em modo mock |
 | Gesto pela webcam (no lugar dos óculos) | Escrito, não executado com webcam |
 | Política de locomoção do Go2 na simulação | **Falta. Trava o resto** |
@@ -59,7 +59,7 @@ O porquê da política de locomoção ser o bloqueio está em [docs/arquitetura.
 
 | Documento | O que tem |
 |---|---|
-| [Arquitetura](docs/arquitetura.md) | Fluxo, decisões, segurança, o que falta e ordem de trabalho |
+| [Arquitetura (esboço)](docs/arquitetura.md) | Fluxo, decisões, segurança, o que falta e ordem de trabalho |
 | [Óculos Meta](docs/oculos-meta.md) | O que o SDK dos óculos dá acesso, limites do Android, MockDeviceKit, MediaPipe |
 | [Robôs Unitree](docs/robos-unitree.md) | Comandos do Go2 e do G1, simuladores e políticas de locomoção |
 | [Projetos relacionados](docs/projetos-relacionados.md) | Repositórios parecidos, com o que cada um faz |
