@@ -72,9 +72,9 @@ Aqui já funciona de ponta a ponta, com a webcam no lugar dos óculos. Serve par
 
 Depois disso, o G1 é `--robo g1`, no pórtico nos primeiros testes.
 
-## Simulação
+## Sem robô
 
-O `unitree_mujoco` só aceita baixo nível, então `Hello()` e `WaveHand()` não existem lá. Testar sem robô exige uma política de locomoção e um modo `--robo sim` na ponte, que ainda não existe (ver [O que falta](../docs/arquitetura.md#o-que-falta)). Até lá, `--robo mock` cobre o protocolo.
+`--robo mock` cobre o protocolo e as regras de parada sem mover nada. Os testes vão direto no robô real, sem simulação ([plano](../docs/plano.md)).
 
 ## Estado
 
