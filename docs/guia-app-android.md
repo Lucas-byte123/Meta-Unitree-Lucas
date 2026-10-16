@@ -22,11 +22,10 @@ flowchart LR
 ## Primeiro dia
 
 1. **Acesso ao repositório.** Peça para ser adicionado como colaborador em https://github.com/Lucas-byte123/Meta-Unitree-Lucas.
-2. **Clonar.** O código ainda está num branch, até o PR entrar no `main`:
+2. **Clonar:**
    ```
    git clone https://github.com/Lucas-byte123/Meta-Unitree-Lucas.git
    cd Meta-Unitree-Lucas
-   git checkout docs/plano-semanal
    ```
 3. **Rodar a versão Python do que você vai construir.** Precisa de Python 3.11 (o MediaPipe ainda não tem versão para o 3.14):
    ```
