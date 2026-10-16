@@ -1,3 +1,4 @@
-websockets
-mediapipe
+websockets>=13
+# 0.10.35: última versão com a API de Tasks usada aqui; a 1.x mudou o empacotamento e não foi testada
+mediapipe==0.10.35
 opencv-python
