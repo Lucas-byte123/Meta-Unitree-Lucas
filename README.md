@@ -50,8 +50,8 @@ O caminho A (laptop + WebRTC) serve para começar logo; o B (Jetson + SDK oficia
 | Arquitetura e plano semanal | Escritos |
 | Ponte WebSocket -> SDK Unitree | Escrita, testada só em modo mock |
 | Backend WebRTC da ponte (caminho A) | Falta |
-| Gesto pela webcam (no lugar dos óculos) | Escrito, não executado com webcam |
-| App Android com o SDK dos óculos | Falta |
+| Gesto pela webcam (no lugar dos óculos) | Testado com a webcam ao vivo, ponte em mock |
+| App Android com o SDK dos óculos | Falta ([guia](docs/guia-app-android.md)) |
 | Teste com óculos e robôs reais | Falta |
 
 A ordem de trabalho, semana a semana, está no [plano](docs/plano.md#semanas).
@@ -63,6 +63,7 @@ A ordem de trabalho, semana a semana, está no [plano](docs/plano.md#semanas).
 | [Plano](docs/plano.md) | Semanas com entregas, tarefas por esforço e valor, o que precisa do robô, fases e checkpoints |
 | [Arquitetura](docs/arquitetura.md) | Como funciona: trechos e protocolos, os dois caminhos até o robô, Wi-Fi, segurança, diagramas |
 | [Pesquisa](docs/pesquisa.md) | SDK dos óculos, comandos e simulação dos robôs, projetos parecidos |
+| [Guia do app Android](docs/guia-app-android.md) | Para quem entra no projeto: o que construir no app de gestos, como começar, referências |
 | [MVP gesto](mvp-gesto/) | Ponte, cliente de teclado e gesto pela webcam |
 
 ## Principais descobertas
