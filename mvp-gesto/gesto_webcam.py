@@ -24,7 +24,7 @@ from pathlib import Path
 import cv2
 import mediapipe as mp
 
-from filtro import CONFIANCA_MIN, FiltroGesto
+from filtro import CONFIANCA_MIN, CONFIANCA_MIN_PARAR, FiltroGesto
 
 # Gestos prontos do MediaPipe: Closed_Fist, Open_Palm, Pointing_Up,
 # Thumb_Down, Thumb_Up, Victory, ILoveYou.
@@ -92,7 +92,7 @@ def desenhar(frame, resultado, gesto, conf, filtro, t_ms, painel, fps, espelhar)
 
     cv2.rectangle(frame, (0, 0), (w, 92), PRETO, -1)
     no_mapa = gesto in filtro.mapa
-    cor = VERDE if no_mapa and conf >= CONFIANCA_MIN else BRANCO
+    cor = VERDE if no_mapa and filtro.vale(gesto, conf) else BRANCO
     # sem acentos: o putText do OpenCV não desenha caracteres fora do ASCII
     texto = f"{gesto} {conf:.2f}" if gesto else ("mao sem gesto" if resultado.hand_landmarks else "sem mao")
     if no_mapa:
@@ -111,7 +111,7 @@ def resumo(painel, quadros, duracao_s, do_video):
     print("\n=== Resumo ===")
     origem = "do vídeo" if do_video else "de captura"
     print(f"Quadros: {quadros} em {duracao_s:.1f} s {origem} ({quadros / max(duracao_s, 1e-6):.1f} fps)")
-    print(f"Quadros por gesto (confiança >= {CONFIANCA_MIN}):")
+    print(f"Quadros por gesto (confiança >= {CONFIANCA_MIN}, ou >= {CONFIANCA_MIN_PARAR} no parar):")
     for g, n in painel.quadros_por_gesto.most_common():
         print(f"  {g:12s} {n:6d}  ({100 * n / max(quadros, 1):.0f}%)")
     print("Ações disparadas:", dict(painel.disparos) or "nenhuma")
@@ -183,7 +183,7 @@ async def main():
                 gesto, conf = melhor.category_name, melhor.score
                 if gesto == "None":  # o MediaPipe chama de "None" uma mão sem gesto conhecido
                     gesto = None
-            if gesto and conf >= CONFIANCA_MIN:
+            if filtro.vale(gesto, conf):
                 painel.quadros_por_gesto[gesto] += 1
 
             acao = filtro.atualizar(gesto, conf, ts)

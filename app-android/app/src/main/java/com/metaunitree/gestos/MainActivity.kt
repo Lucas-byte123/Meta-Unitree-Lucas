@@ -187,7 +187,7 @@ class MainActivity : ComponentActivity() {
             v
         } else null
 
-        val valido = l.gesto != null && l.confianca >= CONFIANCA_MIN
+        val valido = f.vale(l.gesto, l.confianca)
         val texto = when {
             l.gesto != null -> "%s %.2f".format(l.gesto, l.confianca)
             l.temMao -> "mão sem gesto"

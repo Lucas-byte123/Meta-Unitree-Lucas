@@ -56,6 +56,16 @@ class FiltroGestoTest {
         assertTrue(t < 250)
     }
 
+    @Test fun pararAceitaConfiancaMaisBaixa() {
+        // 0,6: abaixo do mínimo dos truques (0,65), acima do do parar (0,55)
+        assertEquals(listOf("parar"), rodar(FiltroGesto(MAPA), segurar("Open_Palm", 0, 400, conf = 0.6f)).map { it.second })
+        assertEquals(0, rodar(FiltroGesto(MAPA), segurar("Thumb_Up", 0, 2000, conf = 0.6f)).size)
+    }
+
+    @Test fun pararAbaixoDoMinimoNaoDispara() {
+        assertEquals(0, rodar(FiltroGesto(MAPA), segurar("Open_Palm", 0, 2000, conf = 0.5f)).size)
+    }
+
     @Test fun gestoForaDoMapaNaoDispara() {
         assertEquals(0, rodar(FiltroGesto(MAPA), segurar("ILoveYou", 0, 2000)).size)
     }

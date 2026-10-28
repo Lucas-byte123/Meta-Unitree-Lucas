@@ -30,7 +30,7 @@ Os gestos são os 7 que o MediaPipe reconhece sem treino.
 | ILoveYou | | `palmas` -> braço "clap" |
 | Open_Palm | `parar` -> `StopMove()` | `parar` -> `StopMove()` |
 
-Contra disparo acidental ([`filtro.py`](filtro.py)): confiança >= 0,7, gesto estável por 0,5 s (0,2 s para "parar"), só dispara de novo depois de baixar a mão ou trocar de gesto. A ponte ainda ignora truques por 3 s depois de cada um ("parar" nunca espera).
+Contra disparo acidental ([`filtro.py`](filtro.py)): confiança >= 0,65 (0,55 para "parar", porque um parar à toa só para o robô; medido no celular em 28/10/2026, 0,7 quase nunca disparava 👍 e ✋), gesto estável por 0,5 s (0,2 s para "parar"), só dispara de novo depois de baixar a mão ou trocar de gesto. A ponte ainda ignora truques por 3 s depois de cada um ("parar" nunca espera).
 
 Além dos truques, a ponte aceita movimento: `frente`, `tras`, `girar_esq`, `girar_dir` e `{"tipo":"mover","vx":..,"vy":..,"giro":..}`. Todo movimento para sozinho depois de 1 s se não for renovado, e a velocidade é cortada em 0,3 m/s e 0,6 rad/s. Por enquanto não há gesto para movimento; dá para testar pelo `teclado.py`.
 
@@ -51,7 +51,7 @@ cd mvp-gesto
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m unittest          # 27 testes, ~3 s
+python -m unittest          # 29 testes, ~3 s
 ```
 
 O modelo de gestos (`gesture_recognizer.task`) é baixado sozinho na primeira execução do `gesto_webcam.py`.

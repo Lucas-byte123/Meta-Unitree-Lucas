@@ -60,7 +60,7 @@ Para os óculos: uma `CameraOculos : FonteDeFrames` com o SDK Meta DAT, no lugar
 
 Testado em 28/10/2026 num Galaxy S25+ (Android 17), pelo cabo com `adb reverse`, com a ponte em `mock`:
 
-- Build e 10 testes do filtro passando.
+- Build e 12 testes do filtro passando.
 - Conecta na ponte e processa ~15 fps.
 - App para segundo plano -> ponte mostra `cliente desconectado -> parar`; ao voltar, reconecta.
 
