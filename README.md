@@ -73,7 +73,7 @@ A ordem de trabalho, semana a semana, está no [plano](docs/plano.md#semanas).
 3. **Os robôs têm comandos prontos** (`Move`, `StopMove`, `Sit`, `Hello`, `WaveHand`...) no [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python).
 4. **Esses comandos não existem no simulador**, e não há política de locomoção pronta para o Go2. Por isso os testes vão direto no robô real ([pesquisa](docs/pesquisa.md#simulação)).
 5. **O Jetson do Go2 EDU não tem Wi-Fi.** Para o celular falar com ele é preciso um adaptador USB; a alternativa é WebRTC pelo Wi-Fi do próprio robô, via laptop ([arquitetura](docs/arquitetura.md#dois-caminhos-até-o-robô)).
-6. **O SDK dos óculos 1.0 foi anunciado em 24/09/2026** ([Meta](https://developers.meta.com/blog/meta-connect-recap-ai-glasses/)), com fala, movimento da cabeça e "Hey Meta" para abrir apps. No GitHub a última versão publicada ainda é a 0.9.0.
+6. **O SDK dos óculos está na 1.0.1** (09/10/2026), no Maven Central e sem token ([CHANGELOG](https://github.com/facebook/meta-wearables-dat-android/blob/main/CHANGELOG.md)). A 1.0 trouxe, como experimentais, fala, movimento da cabeça e "Hey Meta" para abrir apps ([Meta](https://developers.meta.com/blog/meta-connect-recap-ai-glasses/)).
 
 ## Links principais
 
