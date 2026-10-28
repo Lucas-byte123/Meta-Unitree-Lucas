@@ -51,6 +51,7 @@ O caminho A (laptop + WebRTC) serve para começar logo; o B (Jetson + SDK oficia
 | Ponte WebSocket -> SDK Unitree | Escrita, testada só em modo mock |
 | Backend WebRTC da ponte (caminho A) | Falta |
 | Gesto pela webcam (no lugar dos óculos) | Testado com a webcam ao vivo, ponte em mock |
+| App Android, com a câmera do celular | Esqueleto rodando no celular contra a ponte em mock; gestos ao vivo a conferir ([app](app-android/)) |
 | App Android com o SDK dos óculos | Falta ([guia](docs/guia-app-android.md)) |
 | Teste com óculos e robôs reais | Falta |
 

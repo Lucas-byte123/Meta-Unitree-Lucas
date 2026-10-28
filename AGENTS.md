@@ -22,7 +22,7 @@ Antes de mudar algo grande, leia: [`docs/plano.md`](docs/plano.md) (semanas e ch
 | `mvp-gesto/gesto_webcam.py` | MediaPipe na webcam ou em vídeo -> filtro -> ponte. Referência para o app Android. |
 | `mvp-gesto/teclado.py` | Cliente de teste: manda ações digitadas. |
 | `mvp-gesto/tests/` | `unittest` do filtro e da ponte, sem robô e sem câmera. |
-| `app-android/` | App Android (ainda não existe). Especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
+| `app-android/` | App Android: câmera do celular -> MediaPipe -> filtro -> ponte. Como rodar em [`app-android/README.md`](app-android/README.md); especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
 
 ## App Android (`app-android/`)
 

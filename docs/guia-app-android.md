@@ -2,6 +2,8 @@
 
 > Para quem entra no projeto para fazer o app do celular. Atualizado em 28/10/2026. É a semana 4 do [plano](plano.md#semanas), adiantada para rodar em paralelo com o trabalho nos óculos. Esforço estimado: 1 a 2 semanas.
 
+**Ponto de partida:** o esqueleto já existe em [`app-android/`](../app-android/) (28/10/2026): câmera, MediaPipe, filtro com testes, cliente da ponte e tela. O trabalho agora é fechar o [pronto quando](#pronto-quando) e o que aparecer nos testes.
+
 ## Em uma frase
 
 Um app Android que olha pela câmera, reconhece gestos de mão com o MediaPipe e manda comandos JSON por WebSocket para a **ponte**, um programa Python que já existe e que fala com o robô.
