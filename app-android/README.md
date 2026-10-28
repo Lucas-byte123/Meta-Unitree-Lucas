@@ -28,6 +28,15 @@ Testes do filtro (os mesmos casos de `mvp-gesto/tests/test_filtro.py`):
 ./gradlew testDebugUnitTest
 ```
 
+## Medir: o que o MediaPipe viu
+
+Cada vez que o app abre, ele grava um CSV com uma linha por quadro (`t_ms,gesto,confianca,tem_mao,acao`, as mesmas colunas do `--log` do `gesto_webcam.py`). O arquivo é fechado quando o app sai da tela. Para puxar:
+
+```
+adb shell input keyevent KEYCODE_HOME     # fecha o arquivo
+adb pull /sdcard/Android/data/com.metaunitree.gestos/files/ csv/
+```
+
 ## Arquivos
 
 | Arquivo | O que faz | No Python |
@@ -36,6 +45,7 @@ Testes do filtro (os mesmos casos de `mvp-gesto/tests/test_filtro.py`):
 | `ReconhecedorGesto.kt` | MediaPipe Gesture Recognizer em `LIVE_STREAM` | `recognize_for_video` |
 | `FiltroGesto.kt` | Filtro anti-disparo e os mapas gesto -> ação | `filtro.py`, `MAPA` |
 | `ClientePonte.kt` | WebSocket (OkHttp): ações, heartbeat, acks | `websockets` em `gesto_webcam.py` |
+| `RegistroCsv.kt` | CSV com o gesto e a confiança de cada quadro | `--log` |
 | `MainActivity.kt` | Liga tudo e desenha a tela (Compose) | `main()` e `desenhar()` |
 
 Para os óculos: uma `CameraOculos : FonteDeFrames` com o SDK Meta DAT, no lugar da `CameraCelular`.

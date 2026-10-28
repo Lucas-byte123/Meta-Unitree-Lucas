@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var cliente: ClientePonte
     private var reconhecedor: ReconhecedorGesto? = null
     private val prefs by lazy { getSharedPreferences("gestos", MODE_PRIVATE) }
+    private val registro by lazy { RegistroCsv(this) }
 
     @Volatile private var filtro = FiltroGesto(MAPAS.getValue("go2"))
     private var ultimoHeartbeat = 0L
@@ -146,10 +147,12 @@ class MainActivity : ComponentActivity() {
         cliente.desconectar()
         reconhecedor?.fechar()
         reconhecedor = null
+        registro.fechar()
     }
 
     private fun iniciar() {
         if (reconhecedor != null) return
+        registro.abrir()
         reconhecedor = ReconhecedorGesto(this, ::aoLer)
         camera.iniciar(::aoChegarFrame)
         cliente.conectar(endereco())
@@ -163,6 +166,7 @@ class MainActivity : ComponentActivity() {
     private fun aoLer(l: Leitura) {
         val f = filtro
         val acao = f.atualizar(l.gesto, l.confianca, l.tMs)
+        registro.escrever(l, acao)
         if (acao != null) {
             Log.i(TAG, "${l.gesto} -> $acao")
             if (!cliente.acao(acao)) mostrar("$acao (sem ponte)", AMARELO)
