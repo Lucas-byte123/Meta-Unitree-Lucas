@@ -8,6 +8,7 @@ Uso:
     python3 ponte.py --robo mock                 # sem robô, só imprime
     python3 ponte.py --robo go2 --iface eth0
     python3 ponte.py --robo g1  --iface eth0
+    UNITREE_AES_128_KEY=... python3 ponte.py --robo go2-webrtc --ip 192.168.x.y   # caminho A, Wi-Fi
 
 Protocolo (uma mensagem JSON por frame WebSocket):
     {"tipo": "acao", "acao": "cumprimentar", "id": "abc123"}
@@ -24,6 +25,9 @@ import concurrent.futures
 import json
 import logging
 import math
+import os
+import random
+import threading
 import time
 
 log = logging.getLogger("ponte")
@@ -133,6 +137,85 @@ class RoboG1:
         self.loco.StopMove()
 
 
+class RoboGo2WebRTC:
+    """Go2 pelo Wi-Fi, com a biblioteca unitree_webrtc_connect (caminho A, ponte no laptop).
+
+    A biblioteca é assíncrona (aiortc) e a ponte chama o robô de forma síncrona, de
+    outras threads. Então a conexão vive num loop de eventos próprio, numa thread
+    separada. Dois cuidados com a versão 2.2.0 da biblioteca:
+    - ela espera a resposta do robô sem prazo; aqui todo comando tem PRAZO_S;
+    - ela não marca a conexão como caída quando o WebRTC falha; aqui o estado da
+      conexão é conferido antes de cada comando.
+    Move vai sem esperar resposta (policy noreply), como no exemplo sportmode_mcf da
+    biblioteca e no SDK WebRTC da Unitree: é reenviado a cada 0,1 s. Truques e
+    StopMove esperam a resposta, com prazo. Os api_id usados são iguais nos modos
+    normal e MCF (firmware >= 1.1.7).
+    Não rodado num robô ainda.
+    """
+    PRAZO_S = 2.0          # resposta de um comando
+    PRAZO_CONEXAO_S = 30.0
+
+    def __init__(self, ip=None, chave_aes=None, modo="sta"):
+        from unitree_webrtc_connect import RTC_TOPIC, SPORT_CMD, UnitreeWebRTCConnection, WebRTCConnectionMethod
+
+        self._loop = asyncio.new_event_loop()
+        threading.Thread(target=self._loop.run_forever, name="webrtc", daemon=True).start()
+        metodo = WebRTCConnectionMethod.LocalAP if modo == "ap" else WebRTCConnectionMethod.LocalSTA
+        # firmware >= 1.1.15 exige a chave AES do robô (unitree-fetch-aes-key)
+        self.conn = UnitreeWebRTCConnection(metodo, ip=ip, aes_128_key=chave_aes)
+        self._rodar(self.conn.connect(), self.PRAZO_CONEXAO_S)
+        self._topico = RTC_TOPIC["SPORT_MOD"]
+        self._cmd = SPORT_CMD
+        # mesmos truques do RoboGo2; Damp nunca (o robô desaba)
+        self.acoes = {"cumprimentar": "Hello", "sentar": "Sit", "levantar": "RiseSit", "alongar": "Stretch"}
+        self.TRUQUES = set(self.acoes)
+
+    def _rodar(self, corotina, prazo):
+        futuro = asyncio.run_coroutine_threadsafe(asyncio.wait_for(corotina, prazo), self._loop)
+        return futuro.result(prazo + 1.0)
+
+    def _conferir_conexao(self):
+        pc = self.conn.pc
+        if pc is None or pc.connectionState != "connected":
+            raise ConnectionError(f"WebRTC sem conexão com o robô ({pc.connectionState if pc else 'fechada'})")
+
+    def _enviar(self, nome, parametro=None):
+        self._conferir_conexao()
+        opcoes = {"api_id": self._cmd[nome]}
+        if parametro is not None:
+            opcoes["parameter"] = parametro
+        resposta = self._rodar(self.conn.datachannel.pub_sub.publish_request_new(self._topico, opcoes), self.PRAZO_S)
+        try:
+            codigo = resposta["data"]["header"]["status"]["code"]
+        except (KeyError, TypeError):
+            return  # resposta sem status: não dá para conferir
+        if codigo != 0:
+            raise RuntimeError(f"robô recusou {nome} (código {codigo})")
+
+    def executar(self, acao):
+        self._enviar(self.acoes[acao])
+
+    def mover(self, vx, vy, giro):
+        self._conferir_conexao()
+        carga = {
+            "header": {
+                "identity": {"id": int(time.time() * 1000) % 2147483648 + random.randint(0, 1000),
+                             "api_id": self._cmd["Move"]},
+                "policy": {"priority": 0, "noreply": True},
+            },
+            "parameter": json.dumps({"x": vx, "y": vy, "z": giro}),
+            "binary": [],
+        }
+
+        async def publicar():  # o canal do aiortc só pode ser usado de dentro do loop dele
+            self.conn.datachannel.pub_sub.publish_without_callback(self._topico, carga)
+
+        self._rodar(publicar(), self.PRAZO_S)
+
+    def parar(self):
+        self._enviar("StopMove")
+
+
 class Ponte:
     def __init__(self, robo):
         self.robo = robo
@@ -167,6 +250,14 @@ class Ponte:
                 await asyncio.sleep(REENVIO_MOVIMENTO_S)
         except asyncio.CancelledError:
             return  # outro movimento ou um parar assumiu
+        except Exception:
+            log.exception("falha ao mover -> parar")
+            self.movimento = None
+            try:
+                await self._na_fila(self.robo.parar)
+            except Exception:
+                log.exception("falha também ao parar: use o controle físico")
+            return
         log.info("movimento expirou -> parar")
         self.movimento = None
         await self._na_fila(self.robo.parar)
@@ -228,6 +319,13 @@ class Ponte:
         return {"tipo": "ack", "id": mid, "ok": True, "acao": "mover",
                 "vx": vx, "vy": vy, "giro": giro, "limitado": limitado}
 
+    async def _parar_sem_derrubar(self):
+        # o vigia e o fim da conexão não podem morrer se o robô não responder ao parar
+        try:
+            await self.parar()
+        except Exception:
+            log.exception("falha ao parar o robô: use o controle físico")
+
     async def vigia_heartbeat(self):
         # Só age se algum cliente já mandou heartbeat (ações discretas funcionam sem ele).
         while True:
@@ -235,7 +333,7 @@ class Ponte:
             if self.ultimo_heartbeat and time.monotonic() - self.ultimo_heartbeat > HEARTBEAT_TIMEOUT_S:
                 log.warning("heartbeat perdido -> parar")
                 self.ultimo_heartbeat = None
-                await self.parar()
+                await self._parar_sem_derrubar()
 
     async def conexao(self, ws):
         log.info("cliente conectado: %s", ws.remote_address)
@@ -254,20 +352,31 @@ class Ponte:
         finally:
             log.info("cliente desconectado -> parar")
             self.ultimo_heartbeat = None
-            await self.parar()
+            await self._parar_sem_derrubar()
 
 
 async def main():
     import websockets
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--robo", choices=["mock", "go2", "g1"], default="mock")
-    ap.add_argument("--iface", default="eth0", help="interface da rede 192.168.123.x")
+    ap.add_argument("--robo", choices=["mock", "go2", "g1", "go2-webrtc"], default="mock")
+    ap.add_argument("--iface", default="eth0", help="interface da rede 192.168.123.x (go2, g1)")
+    ap.add_argument("--ip", help="IP do Go2 no Wi-Fi (go2-webrtc no modo sta)")
+    ap.add_argument("--modo", choices=["sta", "ap"], default="sta",
+                    help="go2-webrtc: sta = robô e laptop no mesmo roteador; ap = laptop no Wi-Fi do robô")
     ap.add_argument("--porta", type=int, default=8765)
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-    robo = {"mock": lambda: RoboMock(), "go2": lambda: RoboGo2(a.iface), "g1": lambda: RoboG1(a.iface)}[a.robo]()
+    if a.robo == "go2-webrtc" and a.modo == "sta" and not a.ip:
+        ap.error("--robo go2-webrtc no modo sta precisa de --ip")
+    robo = {
+        "mock": lambda: RoboMock(),
+        "go2": lambda: RoboGo2(a.iface),
+        "g1": lambda: RoboG1(a.iface),
+        # a chave vem do ambiente, não da linha de comando (que aparece no ps e no histórico)
+        "go2-webrtc": lambda: RoboGo2WebRTC(a.ip, os.environ.get("UNITREE_AES_128_KEY"), a.modo),
+    }[a.robo]()
     ponte = Ponte(robo)
     asyncio.create_task(ponte.vigia_heartbeat())
     async with websockets.serve(ponte.conexao, "0.0.0.0", a.porta):

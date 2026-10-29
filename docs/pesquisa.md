@@ -115,8 +115,16 @@ Vem junto com o SDK e finge um par de óculos pareado dentro do app ([documenta�
 |---|---|---|---|
 | [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python) | Sim | Go2, G1 | Python >= 3.8 e `cyclonedds == 0.10.2`. **É o que a ponte usa** |
 | [unitree_ros2](https://github.com/unitreerobotics/unitree_ros2) | Sim | Go2, B2, H1 | ROS 2 Foxy (Ubuntu 20.04) ou Humble (22.04). Comandos em `/api/sport/request`; estado em `/sportmodestate`, `/lowstate`, `/wirelesscontroller` |
-| [unitree_webrtc_connect](https://github.com/legion1581/unitree_webrtc_connect) | Não (MIT) | Go2 AIR/PRO/EDU, G1 AIR/EDU | Mesmo protocolo do app da Unitree. Desde o firmware G1 1.5.1 / Go2 1.1.15 exige uma chave AES por robô |
+| [unitree_webrtc_connect](https://github.com/legion1581/unitree_webrtc_connect) | Não (MIT) | Go2 AIR/PRO/EDU, G1 AIR/EDU | Mesmo protocolo do app da Unitree. Desde o firmware G1 1.5.1 / Go2 1.1.15 exige uma chave AES por robô, que a própria biblioteca busca na conta Unitree em que o robô foi vinculado (`unitree-fetch-aes-key`). **É o que a ponte usa no caminho A** (`--robo go2-webrtc`, versão 2.2.0 de 17/08/2026). Um amigo do projeto usou como base para teleoperar um Go2 |
 | [go2_ros2_sdk](https://github.com/abizovnuralem/go2_ros2_sdk) | Não | Go2 AIR/PRO/EDU | ROS 2 por WebRTC (Wi-Fi) ou CycloneDDS (cabo), com LiDAR, câmera, SLAM e Nav2 |
+
+**unitree_webrtc_connect 2.2.0, lido no código em 29/10/2026** ([fonte](https://github.com/legion1581/unitree_webrtc_connect/tree/v2.2.0)):
+
+- `publish_request_new` espera a resposta do robô sem prazo. `Move` vai sem esperar resposta (`policy.noreply`), como no exemplo `sportmode_mcf`.
+- `isConnected` não volta a `False` quando a conexão falha (só quando ela é fechada). O estado real está em `conn.pc.connectionState`.
+- Os `api_id` de `Hello`, `Sit`, `RiseSit`, `Stretch`, `Move` e `StopMove` são os mesmos nos modos normal e MCF (firmware 1.1.7 em diante).
+- O exemplo `examples/go2/data_channel/sportmode/sportmode.py` anda a 0,5 m/s, troca para o modo "ai" e manda o robô plantar bananeira.
+- Depende do `pyaudio`, que precisa do `portaudio` instalado no sistema.
 
 **Firmware do Go2:** o firmware 1.1.6 mudou os IDs das APIs de sport, e SDK Python antigo dá `3203 unknown api`. O [PR #76](https://github.com/unitreerobotics/unitree_sdk2_python/pull/76) alinha o SDK Python com essa versão.
 

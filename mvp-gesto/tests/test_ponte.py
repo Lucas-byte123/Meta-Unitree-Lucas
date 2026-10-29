@@ -138,6 +138,30 @@ class TestPonte(unittest.IsolatedAsyncioTestCase):
         await asyncio.sleep(0.15)
         self.assertEqual(self.robo.chamadas[-1], ("parar",))
 
+    async def test_falha_ao_mover_manda_parar(self):
+        # robô que recusa o Move (ex.: WebRTC instável): a ponte não pode só desistir em silêncio
+        def mover_que_falha(*a):
+            raise RuntimeError("robô recusou Move")
+
+        self.robo.mover = mover_que_falha
+        await self.acao("frente")
+        await asyncio.sleep(0.1)
+        self.assertEqual(self.robo.chamadas[-1], ("parar",))
+        self.assertFalse(self.ponte.em_movimento())
+
+    async def test_vigia_sobrevive_a_falha_ao_parar(self):
+        def parar_que_falha():
+            raise ConnectionError("sem conexão com o robô")
+
+        self.robo.parar = parar_que_falha
+        vigia = asyncio.create_task(self.ponte.vigia_heartbeat())
+        try:
+            await self.ponte.tratar({"tipo": "heartbeat"})
+            await asyncio.sleep(0.25)  # heartbeat perdido -> parar falha
+            self.assertFalse(vigia.done())  # o vigia continua de pé
+        finally:
+            vigia.cancel()
+
     async def test_mover_acima_do_limite_e_cortado(self):
         r = await self.ponte.tratar({"tipo": "mover", "vx": 2.0, "vy": -1.0, "giro": 5.0})
         self.assertTrue(r["ok"])

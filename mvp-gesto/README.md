@@ -38,10 +38,11 @@ Além dos truques, a ponte aceita movimento: `frente`, `tras`, `girar_esq`, `gir
 
 | Arquivo | Onde roda | O que faz |
 |---|---|---|
-| `ponte.py` | Jetson do robô, ou laptop no caminho A | Servidor WebSocket; valida e chama o SDK (Go2, G1 ou mock). Limita velocidade, faz movimento expirar e para o robô se o cliente cair ou o heartbeat parar. |
+| `ponte.py` | Jetson do robô, ou laptop no caminho A | Servidor WebSocket; valida e chama o SDK (Go2, G1 ou mock) ou, no caminho A, a biblioteca WebRTC (`go2-webrtc`). Limita velocidade, faz movimento expirar e para o robô se o cliente cair ou o heartbeat parar. |
 | `filtro.py` | Laptop (e, traduzido, o app) | Filtro anti-disparo: gesto de cada quadro -> ação. Sem dependências. |
 | `gesto_webcam.py` | Laptop | MediaPipe na webcam ou num vídeo -> filtro -> ponte. Referência para o app Android. |
 | `teclado.py` | Laptop | Manda ações e velocidades digitadas. |
+| `checar_go2.py` | Laptop | Conecta ao Go2 por WebRTC e lê o modo de movimento, sem mover nada. Primeiro passo da sessão com o robô. |
 | `tests/` | Laptop | Testes do filtro e da ponte, sem robô e sem câmera. |
 
 Instalação (Python 3.11; o MediaPipe ainda não tem versão para o 3.14):
@@ -51,7 +52,7 @@ cd mvp-gesto
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m unittest          # 29 testes, ~3 s
+python -m unittest          # 42 testes, ~4 s
 ```
 
 O modelo de gestos (`gesture_recognizer.task`) é baixado sozinho na primeira execução do `gesto_webcam.py`.
@@ -65,6 +66,21 @@ Cada uma dá para testar sozinha.
 **1. Robô obedece a um script.** SSH no Jetson, instalar `unitree_sdk2_python`, rodar `example/go2/high_level/go2_sport_client.py <iface>`. Pronto quando o Go2 der a pata a partir do terminal.
 
 **2. Ponte + teclado.** No Jetson: `python3 ponte.py --robo go2 --iface <iface>`. No laptop, no mesmo Wi-Fi: `python3 teclado.py ws://<ip-do-jetson>:8765` e digitar `cumprimentar`. Sem robô: `--robo mock`.
+
+**2-A. Ponte no laptop pelo Wi-Fi (caminho A).** Sem SSH nem Jetson: a ponte fala com o Go2 por WebRTC, com a [unitree_webrtc_connect](https://github.com/legion1581/unitree_webrtc_connect).
+
+```
+brew install portaudio                       # no Mac; no Linux: sudo apt install portaudio19-dev
+pip install -r requirements-webrtc.txt
+unitree-fetch-aes-key --email <conta Unitree do robô> --password '...' --device-type Go2   # firmware >= 1.1.15
+export UNITREE_AES_128_KEY=<chave>           # nunca em arquivo do repositório
+python ponte.py --robo go2-webrtc --ip <ip-do-go2>          # robô e laptop no mesmo roteador
+python ponte.py --robo go2-webrtc --modo ap                  # ou: laptop no Wi-Fi do próprio robô
+```
+
+O robô precisa estar de pé e no modo normal (pelo controle ou pelo app da Unitree): a ponte não troca o modo. **Não rode os exemplos da biblioteca como vêm:** o `sportmode.py` anda a 0,5 m/s e manda o robô plantar bananeira.
+
+Escrito e testado com uma imitação da biblioteca (`tests/test_go2_webrtc.py`); **ainda não rodou num robô.**
 
 **3. Gesto na webcam -> robô.** Primeiro com a ponte em `mock` no próprio laptop (roteiro abaixo), depois com `--ponte ws://<ip-da-ponte>:8765`.
 

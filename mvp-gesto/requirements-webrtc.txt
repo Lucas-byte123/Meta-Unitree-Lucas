@@ -1,0 +1,4 @@
+# Só para a ponte com --robo go2-webrtc (caminho A, laptop no Wi-Fi do Go2).
+# Antes, no Mac: brew install portaudio   | no Linux: sudo apt install portaudio19-dev
+# (a biblioteca depende do pyaudio, que precisa do portaudio para compilar)
+unitree_webrtc_connect==2.2.0
