@@ -1,6 +1,6 @@
 # Guia: app Android de gestos
 
-> Para quem entra no projeto para fazer o app do celular. Atualizado em 16/10/2026. É a semana 4 do [plano](plano.md#semanas), adiantada para rodar em paralelo com o trabalho nos óculos. Esforço estimado: 1 a 2 semanas.
+> Para quem entra no projeto para fazer o app do celular. Atualizado em 28/10/2026. É a semana 4 do [plano](plano.md#semanas), adiantada para rodar em paralelo com o trabalho nos óculos. Esforço estimado: 1 a 2 semanas.
 
 ## Em uma frase
 
@@ -61,6 +61,10 @@ flowchart LR
 | Cliente WebSocket com heartbeat e leitura dos `ack` | Comando de velocidade livre (`mover`) |
 | Tela com gesto, confiança, progresso, resposta da ponte e botão PARAR | Voz, LLM, agentes |
 | Campo editável com o endereço da ponte e escolha do mapa (go2/g1) | iOS |
+
+### Configuração do projeto
+
+A mesma do app de exemplo dos óculos (`CameraAccess`, do SDK DAT 1.0.1), para a troca da câmera pelos óculos ser só adicionar uma dependência: `minSdk 31` (Android 12), `compileSdk 36`, JDK 17, Kotlin 2.2, Jetpack Compose ([build.gradle.kts do exemplo](https://github.com/facebook/meta-wearables-dat-android/blob/main/samples/CameraAccess/app/build.gradle.kts)).
 
 ### Estrutura sugerida
 
@@ -128,6 +132,7 @@ Erros que a ponte devolve e que a tela deve mostrar: `ocupado` (outro truque há
 ## Pegadinhas conhecidas
 
 - **`ws://` sem TLS é bloqueado por padrão no Android.** Para desenvolvimento, `android:usesCleartextTraffic="true"` no manifest ou um `network_security_config`.
+- **Pelo cabo USB, sem depender do Wi-Fi:** `adb reverse tcp:8765 tcp:8765` faz o `ws://localhost:8765` do celular chegar na ponte do laptop. Bom para o dia a dia; o teste pelo Wi-Fi continua necessário, porque é assim que vai funcionar com o robô.
 - **Endereço da ponte:** no celular de verdade, o IP do laptop no Wi-Fi (no Mac: `ipconfig getifaddr en0`), por exemplo `ws://192.168.0.42:8765`. No emulador, `ws://10.0.2.2:8765`.
 - **Celular e laptop na mesma rede.** Redes de instituição costumam bloquear um aparelho de falar com outro; se não conectar, teste no hotspot do celular ou num roteador próprio. O firewall do macOS também pode perguntar se o Python aceita conexões.
 - **`LIVE_STREAM` exige horários sempre crescentes** e devolve o resultado em outra thread, num callback. Use o horário do frame no filtro, não o horário do callback.
@@ -177,7 +182,9 @@ Em ordem provável:
 - [Tráfego sem TLS (network security config)](https://developer.android.com/privacy-and-security/security-config)
 
 **Óculos (para conhecer, não para usar agora)**
-- [meta-wearables-dat-android](https://github.com/facebook/meta-wearables-dat-android): SDK e app de exemplo
+- [meta-wearables-dat-android](https://github.com/facebook/meta-wearables-dat-android): SDK e app de exemplo (`samples/CameraAccess`)
+- MockDeviceKit com `setCameraFeed(CameraFacing)`: usa a câmera do celular como se fosse a dos óculos, para testar o caminho do SDK sem os óculos ([documentação](https://wearables.developer.meta.com/docs/develop/dat/mock-device-kit/))
+- Documentação do DAT para o seu assistente: servidor MCP `https://mcp.developer.meta.com/wearables` (sem autenticação) ou as skills do `install-skills.sh` do SDK
 - [Pesquisa do projeto sobre os óculos](pesquisa.md): fps, resoluções, limitações no Android
 
 ## Como entregar

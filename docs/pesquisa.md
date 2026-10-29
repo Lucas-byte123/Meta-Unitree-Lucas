@@ -8,7 +8,7 @@
 
 ## Óculos Ray-Ban Meta Gen 2
 
-> Conferido em 28/09/2026 nas fontes oficiais listadas no fim. Nada foi testado com os óculos ainda.
+> Conferido em 28/09/2026 nas fontes oficiais listadas no fim; versão do SDK e requisitos atualizados em 28/10/2026. Nada foi testado com os óculos ainda.
 
 ### Em resumo
 
@@ -22,7 +22,7 @@
 | O quê | Situação |
 |---|---|
 | Anúncio | "Wearables Device Access Toolkit 1.0" anunciado em 24/09/2026 no [recap do Meta Connect](https://developers.meta.com/blog/meta-connect-recap-ai-glasses/): abrir apps com "Hey Meta", reconhecimento de fala, streaming de movimento da cabeça e captura de câmera |
-| GitHub | O [CHANGELOG do Android](https://github.com/facebook/meta-wearables-dat-android/blob/main/CHANGELOG.md) e o [do iOS](https://github.com/facebook/meta-wearables-dat-ios/blob/main/CHANGELOG.md) ainda param na **0.9.0 (03/08/2026)** |
+| Android | **1.0.0 em 24/09/2026 e 1.0.1 em 09/10/2026** ([CHANGELOG](https://github.com/facebook/meta-wearables-dat-android/blob/main/CHANGELOG.md)). A 1.0.1 corrige congelamentos de quadro e travadas no `Stream`. Inputs, Motion, Speech, captura de foto e áudio no stream entram como experimentais: dá para testar, mas não para publicar |
 | Publicação | O [FAQ](https://developers.meta.com/wearables/faq/) diz que a submissão para publicação vem "soon". Em 23/09/2026 ainda não estava aberta ([VR.org](https://vr.org/articles/meta-glasses-three-tiers-wearables-toolkit-publishing-connect-2026)) |
 
 ### Dispositivos suportados
@@ -71,9 +71,13 @@ Vem junto com o SDK e finge um par de óculos pareado dentro do app ([documenta�
 ### Requisitos para desenvolver
 
 - Conta no Wearables Developer Center e Developer Mode ligado nos óculos (app Meta AI).
-- Android: pacotes via GitHub Packages, com token GitHub de escopo `read:packages` ([README do SDK](https://github.com/facebook/meta-wearables-dat-android)).
+- Android: pacotes no **Maven Central** (`com.meta.wearable:mwdat-core`, `mwdat-camera`, `mwdat-mockdevice`...), **sem token**; até a 0.9 era pelo GitHub Packages com token `read:packages` ([README do SDK](https://github.com/facebook/meta-wearables-dat-android)).
+- Android: o app de exemplo `CameraAccess` usa `minSdk 31` (Android 12), `compileSdk 36`, JDK 17, Kotlin 2.2 e Jetpack Compose ([build.gradle.kts](https://github.com/facebook/meta-wearables-dat-android/blob/main/samples/CameraAccess/app/build.gradle.kts)).
+- Com Developer Mode ligado, o app roda sem o `APPLICATION_ID` e o `CLIENT_TOKEN` do Wearables Developer Center; sem Developer Mode, os dois vão no manifest ([manifest do exemplo](https://github.com/facebook/meta-wearables-dat-android/blob/main/samples/CameraAccess/app/src/main/AndroidManifest.xml)).
 - iOS: a partir da 0.9.0, iOS 17.2 ou mais novo.
 - Só funciona por completo nos países onde os óculos com IA são vendidos.
+
+**Para assistentes de código:** o repositório do SDK traz skills para Claude Code, Codex e Cursor (`install-skills.sh`) e um servidor MCP público com a documentação do DAT, `https://mcp.developer.meta.com/wearables`, sem autenticação ([README do SDK](https://github.com/facebook/meta-wearables-dat-android#readme)).
 
 ### Reconhecer o gesto: MediaPipe
 

@@ -24,6 +24,12 @@ Antes de mudar algo grande, leia: [`docs/plano.md`](docs/plano.md) (semanas e ch
 | `mvp-gesto/tests/` | `unittest` do filtro e da ponte, sem robô e sem câmera. |
 | `app-android/` | App Android (ainda não existe). Especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
 
+## App Android (`app-android/`)
+
+- Mesma configuração do app de exemplo do SDK dos óculos: `minSdk 31`, `compileSdk 36`, JDK 17, Kotlin 2.2, Compose.
+- SDK dos óculos (Meta DAT) 1.0.1, no Maven Central, sem token. Para consultar a documentação dele, use o MCP `https://mcp.developer.meta.com/wearables` (público, sem autenticação) em vez de adivinhar a API.
+- Testar com o celular no cabo: `adb reverse tcp:8765 tcp:8765` e a ponte em `ws://localhost:8765`.
+
 ## Comandos
 
 Tudo do Python roda **de dentro de `mvp-gesto/`** e com o ambiente virtual ativo. Use **Python 3.11**: o MediaPipe não tem versão para o 3.14, e o `python3` do sistema pode ser o 3.14.
