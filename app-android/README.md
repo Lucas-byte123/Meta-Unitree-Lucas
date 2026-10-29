@@ -64,4 +64,13 @@ Testado em 28/10/2026 num Galaxy S25+ (Android 17), pelo cabo com `adb reverse`,
 - Conecta na ponte e processa ~15 fps.
 - App para segundo plano -> ponte mostra `cliente desconectado -> parar`; ao voltar, reconecta.
 
-Falta conferir os itens do [critério de pronto](../docs/guia-app-android.md#pronto-quando): gestos ao vivo, 9 de 10 por gesto, teste dos 5 minutos, pelo Wi-Fi.
+Gestos ao vivo, mesmo celular, ~5 s por gesto, uma tentativa de cada:
+
+| Data | Limiar | Câmera frontal, palma para a câmera | Câmera traseira, primeira pessoa |
+|---|---|---|---|
+| 28/10/2026 | 0,7 | 2 de 4 (👍 ✌️) | 2 de 4 (✌️ ☝️) |
+| 29/10/2026 | 0,65, e 0,55 no parar | **4 de 4** | **4 de 4** (✌️ reconhecido, mas recusado pela ponte com `ocupado`: veio 2,3 s depois do 👍, dentro dos 3 s de cooldown) |
+
+A confiança do ✋ continua baixa (média 0,62 a 0,68), mas passa do 0,55. O `parar` às vezes dispara 2 ou 3 vezes seguidas, o que não tem problema.
+
+Falta conferir os itens do [critério de pronto](../docs/guia-app-android.md#pronto-quando): 9 de 10 por gesto, **teste dos 5 minutos sem disparo falso** (ainda não feito), pelo Wi-Fi.
