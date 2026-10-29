@@ -1,0 +1,30 @@
+# Mesmas versões do app de exemplo do SDK dos óculos (CameraAccess, DAT 1.0.1),
+# para a troca da câmera pelos óculos ser só adicionar o mwdat.
+[versions]
+agp = "8.11.1"
+kotlin = "2.2.21"
+activityCompose = "1.13.0"
+composeBom = "2026.05.01"
+lifecycle = "2.10.0"
+camerax = "1.6.2"
+# mesma versão do mvp-gesto/requirements.txt (a 1.x não foi testada)
+mediapipe = "0.10.35"
+okhttp = "4.12.0"
+junit = "4.13.2"
+
+[libraries]
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

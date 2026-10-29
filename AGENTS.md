@@ -22,7 +22,7 @@ Antes de mudar algo grande, leia: [`docs/plano.md`](docs/plano.md) (semanas e ch
 | `mvp-gesto/gesto_webcam.py` | MediaPipe na webcam ou em vídeo -> filtro -> ponte. Referência para o app Android. |
 | `mvp-gesto/teclado.py` | Cliente de teste: manda ações digitadas. |
 | `mvp-gesto/tests/` | `unittest` do filtro e da ponte, sem robô e sem câmera. |
-| `app-android/` | App Android (ainda não existe). Especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
+| `app-android/` | App Android: câmera do celular -> MediaPipe -> filtro -> ponte. Como rodar em [`app-android/README.md`](app-android/README.md); especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
 
 ## App Android (`app-android/`)
 
@@ -37,7 +37,7 @@ Tudo do Python roda **de dentro de `mvp-gesto/`** e com o ambiente virtual ativo
 ```
 cd mvp-gesto
 python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-python -m unittest                  # 27 testes, ~3 s; rodar antes de todo commit que mexe em Python
+python -m unittest                  # 29 testes, ~3 s; rodar antes de todo commit que mexe em Python
 python ponte.py --robo mock         # terminal 1
 python gesto_webcam.py              # terminal 2 (webcam)
 python gesto_webcam.py --video x.mp4 --ponte nenhuma --log x.csv   # medir em vídeo gravado
@@ -73,7 +73,7 @@ Ao mudar um destes, atualize os outros no mesmo commit:
 |---|---|
 | Protocolo JSON | comentário do topo de `ponte.py`, `docs/arquitetura.md`, `docs/guia-app-android.md`, app Android |
 | Mapa gesto -> ação | `MAPA` em `gesto_webcam.py`, `mvp-gesto/README.md`, `docs/guia-app-android.md`, app Android |
-| Regras do filtro (0,7 / 500 ms / 200 ms) | `filtro.py` e sua versão em Kotlin, com os mesmos casos de teste |
+| Regras do filtro (confiança 0,65 / 0,55 no parar; 500 ms / 200 ms no parar) | `filtro.py` e sua versão em Kotlin, com os mesmos casos de teste |
 | Estado do projeto | tabela "Estado" do `README.md` e do `mvp-gesto/README.md` |
 
 ## Convenções

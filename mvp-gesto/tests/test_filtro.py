@@ -60,6 +60,14 @@ class TestFiltroGesto(unittest.TestCase):
         self.assertEqual(acao, "parar")
         self.assertLess(t, 250)
 
+    def test_parar_aceita_confianca_mais_baixa(self):
+        # 0,6: abaixo do mínimo dos truques (0,65), acima do do parar (0,55)
+        self.assertEqual([a for _, a in rodar(FiltroGesto(MAPA), segurar("Open_Palm", 0, 400, conf=0.6))], ["parar"])
+        self.assertEqual(rodar(FiltroGesto(MAPA), segurar("Thumb_Up", 0, 2000, conf=0.6)), [])
+
+    def test_parar_abaixo_do_minimo_nao_dispara(self):
+        self.assertEqual(rodar(FiltroGesto(MAPA), segurar("Open_Palm", 0, 2000, conf=0.5)), [])
+
     def test_gesto_fora_do_mapa_nao_dispara(self):
         f = FiltroGesto(MAPA)
         self.assertEqual(rodar(f, segurar("ILoveYou", 0, 2000)), [])
