@@ -1,30 +1,54 @@
 # Plano
 
-> Atualizado em 12/10/2026. Testes direto no Go2 real, sem simulação, começando pelo caminho A (laptop + WebRTC) e com o caminho B (Jetson + SDK oficial) como destino final ([arquitetura](arquitetura.md#dois-caminhos-até-o-robô)). Organizado para uma pessoa trabalhando sozinha, com uma entrega por semana. Esforços e metas dos checkpoints são estimativas iniciais.
+> Atualizado em 29/10/2026 (versão anterior: 12/10/2026). Testes direto no Go2 real, sem simulação, começando pelo caminho A (laptop + WebRTC) e com o caminho B (Jetson + SDK oficial) como destino final ([arquitetura](arquitetura.md#dois-caminhos-até-o-robô)). Uma entrega por semana. Esforços e metas dos checkpoints são estimativas.
 
 ## Como trabalhar
 
 - **Quase tudo dá para fazer sem o robô.** O robô entra só para integrar: ligar o que já está pronto e medir.
 - **Sessão com o robô é cara.** Precisa do Go2 disponível, de espaço livre e de **uma segunda pessoa com o controle físico** (regra de [segurança](#segurança-em-todos-os-testes-com-robô)). Então tudo que vai ser testado no robô chega pronto e testado em `mock`, e cada sessão tem um roteiro.
-- **Primeiro o que tira mais incerteza com menos esforço.** As maiores incógnitas hoje são: o caminho WebRTC funciona no nosso Go2? E os óculos entregam vídeo bom o bastante para reconhecer gesto?
+- **Primeiro o que tira mais incerteza com menos esforço.** As maiores incógnitas hoje são: o caminho WebRTC funciona no nosso Go2, e o robô para quando a ponte cai? E os óculos entregam vídeo bom o bastante para reconhecer gesto?
+
+## Onde estamos (29/10/2026)
+
+| Parte | Situação |
+|---|---|
+| Ponte (`ponte.py`) | Pronta em `mock`: lista fechada, limite de velocidade, movimento que expira, parada por heartbeat e desconexão. 42 testes |
+| Gesto na webcam (`gesto_webcam.py`) | Testado ao vivo com a ponte em `mock` |
+| App Android com a câmera do celular | Pronto e testado no celular com a ponte em `mock`: 4 de 4 gestos nas duas câmeras, depois do ajuste do limiar para 0,65 / 0,55 ([dados](../dados/README.md)) |
+| App Android com os óculos | `CameraOculos` escrita (SDK Meta DAT 1.0.1, com modo de óculos falsos do MockDeviceKit); **ainda não rodou** |
+| Backend `go2-webrtc` (caminho A) | Escrito com a [`unitree_webrtc_connect`](https://github.com/legion1581/unitree_webrtc_connect), a biblioteca que o amigo usou; testado com uma imitação dela; **não rodou no robô**. `checar_go2.py` conecta e lê o modo sem mover nada |
+| Robô | Nenhuma sessão ainda. Falta: chave AES (firmware ≥ 1.1.15), modo de rede (AP ou STA) e o que o robô faz quando a conexão cai |
 
 ## Semanas
 
-Cada semana termina com uma entrega que dá para mostrar: um vídeo, um número ou um teste passando.
+Duas frentes independentes que se juntam no marco do MVP: **óculos** (sem robô) e **robô** (sem óculos).
 
-| Semana | Robô? | Trabalho | Entrega do report |
-|---|---|---|---|
-| **1** | Não | Perguntas ao amigo. Rodar `gesto_webcam.py` com a ponte em `mock`. Ações de movimento, expiração e limite de velocidade na ponte, com pytest. Commit dos docs. | Vídeo curto: gesto na webcam vira comando na ponte. Testes passando. Respostas do amigo e decisão sobre o caminho A |
-| **2** | Não | Developer Mode nos óculos, app de exemplo do DAT mostrando o vídeo no celular. Medir fps. Gravar vídeos dos 5 gestos com os óculos e rodar o MediaPipe neles no laptop. Escrever o backend `go2-webrtc` com a biblioteca do amigo. | fps do stream e taxa de reconhecimento de cada gesto em primeira pessoa |
-| **3** | **Sim** (1ª sessão) | Reproduzir a teleoperação do amigo. Ponte `go2-webrtc` + `teclado.py`. Testes de parada, incluindo matar a ponte no meio de um movimento. Gestos da webcam -> Go2. Anotar firmware e JetPack. | Vídeo do Go2 obedecendo a um gesto da webcam. Resultado do teste de queda da ponte |
-| **4** | Não | App Android: frames dos óculos -> MediaPipe -> anti-disparo -> WebSocket para a ponte em `mock`. | Vídeo: gesto visto pelos óculos gera comando na ponte |
-| **5** | **Sim** (2ª sessão) | Óculos -> app -> ponte -> Go2. Medir latência com câmera lenta. | **Marco do MVP:** vídeo do Go2 obedecendo a um gesto feito na frente dos óculos. Latência medida |
-| **6–7** | Não | Apontar: calibrar webcam, detectar AprilTag, conta dedo -> chão, teste dos 10 alvos com a tag numa caixa. Comando `ir_para` na ponte em `mock`. | Erro médio do apontar em cm |
-| **8** | **Sim** (3ª sessão) | `ir_para` com o Go2. Se der tempo, caminho B: SDK e Wi-Fi no Jetson. | Vídeo do Go2 indo até o ponto apontado |
+| Semana | Datas | Frente óculos | Frente robô | Entrega do report |
+|---|---|---|---|---|
+| **1** | 12–18/10 | ✔ Gesto na webcam com a ponte em `mock` | ✔ Ponte: movimento, expiração, limite, testes. Docs | Testes passando; gesto na webcam vira comando |
+| **2** | 19–25/10 | — (óculos indisponíveis) | ✔ Guia do app e `AGENTS.md` | — |
+| **3** | 26/10–01/11 | ✔ App Android com a câmera do celular; limiar calibrado com dados reais. `CameraOculos` escrita | ✔ Backend `go2-webrtc` e `checar_go2.py`. Perguntas ao amigo | 4 de 4 gestos no celular ([dados](../dados/README.md)) |
+| **4** | 02–08/11 | Óculos de verdade: Developer Mode, app de exemplo, `CameraOculos`, fps. Rodadas de gestos, 9 de 10 por gesto, teste dos 5 minutos sem disparo falso | **1ª sessão** ([roteiro](#roteiro-da-1ª-sessão-com-o-robô)): conexão, comandos um a um, testes de parada | fps dos óculos e taxa de reconhecimento em primeira pessoa. Resultado do teste de queda da ponte |
+| **5** | 09–15/11 | Ajustes que a semana 4 pedir | **2ª sessão:** gestos do celular e depois dos óculos -> Go2. Latência com câmera lenta | **Marco do MVP:** vídeo do Go2 obedecendo a um gesto feito na frente dos óculos. Latência medida |
+| **6–7** | 16–29/11 | Apontar: calibrar câmera, AprilTag, conta dedo -> chão, teste dos 10 alvos com a tag numa caixa | `ir_para` na ponte em `mock` | Erro médio do apontar em cm |
+| **8** | 30/11–06/12 | — | **3ª sessão:** `ir_para` com o Go2. Se der tempo, caminho B (SDK e Wi-Fi no Jetson) | Vídeo do Go2 indo até o ponto apontado |
 
 Depois disso: levar o apontar para os óculos (F4), terminar o caminho B e o G1 (F5).
 
-**Se o caminho A falhar na semana 3** (por exemplo, chave AES ou o robô não parar quando a ponte cai), as semanas 4 e 5 trocam o app pelo caminho B: adaptador Wi-Fi, SDK e ponte no Jetson.
+**O que pode atrasar o MVP** não é código: é a chave AES, o acesso ao robô e a segunda pessoa para o controle. **Se o caminho A falhar na 1ª sessão** (chave AES ou o robô não parar quando a ponte cai), a semana 5 passa para o caminho B: adaptador Wi-Fi, SDK e ponte no Jetson.
+
+### Roteiro da 1ª sessão com o robô
+
+Sem gesto nenhum: comandos digitados no `teclado.py`, para que um problema aponte para a conexão com o robô e não para o reconhecimento. Segunda pessoa com o controle físico o tempo todo. Robô de pé e no modo normal antes de começar.
+
+1. `python checar_go2.py --ip <ip>` (ou `--modo ap`): conecta e lê o modo, **sem mover nada**. Confirma rede e chave AES.
+2. `python ponte.py --robo go2-webrtc --ip <ip>` e, em outro terminal, `python teclado.py`.
+3. `parar` com o robô parado.
+4. Truques com o robô parado no lugar: `cumprimentar`, `sentar`, `levantar`.
+5. `frente` (1 s a 0,2 m/s) numa área livre; depois `girar_esq`.
+6. **Testes de parada:** fechar o `teclado.py` no meio de um `frente`; depois matar a ponte (Ctrl+C) no meio de um `frente` e anotar se o robô para sozinho e em quanto tempo.
+7. Se tudo acima passar: gestos do celular -> Go2.
+8. Anotar firmware, latência percebida e qualquer recusa do robô.
 
 ## Tarefas por esforço e valor
 
@@ -34,8 +58,8 @@ Esforço: **P** = horas, **M** = 1 a 3 dias, **G** = uma semana ou mais.
 
 | Tarefa | Esforço | Por que vale | Robô? |
 |---|---|---|---|
-| Fazer as 7 perguntas ao amigo ([F1-A](#f1-a-ponte-no-laptop-webrtc-até-o-go2)) | P | Decide se o caminho A serve e quanto falta para mover o robô | Não |
-| Rodar `gesto_webcam.py` contra a ponte em `mock` | P | Primeira execução real do fluxo gesto -> comando; nunca rodou | Não |
+| Fazer as 7 perguntas ao amigo ([F1-A](#f1-a-ponte-no-laptop-webrtc-até-o-go2)); a biblioteca já foi respondida | P | Decide se o caminho A serve e quanto falta para mover o robô | Não |
+| ✔ Rodar `gesto_webcam.py` contra a ponte em `mock` | P | Primeira execução real do fluxo gesto -> comando | Não |
 | Ver o vídeo dos óculos no celular com o app de exemplo do DAT | M | Maior risco técnico do projeto, e não depende do robô | Não |
 | Medir reconhecimento de gesto em primeira pessoa com vídeos gravados pelos óculos | P | Responde se o gesto funciona do ponto de vista dos óculos, sem escrever o app | Não |
 | Reproduzir a teleoperação do amigo no nosso Go2 | P | Primeiro movimento do robô comandado por nós | **Sim** |
@@ -45,24 +69,24 @@ Esforço: **P** = horas, **M** = 1 a 3 dias, **G** = uma semana ou mais.
 
 | Tarefa | Esforço | Robô? |
 |---|---|---|
-| Ações de movimento, expiração e limite de velocidade na ponte, com pytest | M | Não |
-| Backend `--robo go2-webrtc` na ponte | M | Escrever não; validar sim |
+| ✔ Ações de movimento, expiração e limite de velocidade na ponte, com testes | M | Não |
+| ✔ Backend `--robo go2-webrtc` na ponte (escrito; falta validar no robô) | M | Escrever não; validar sim |
 | Gestos da webcam -> Go2 (F2 no robô) | P | **Sim** |
-| App Android: frames -> MediaPipe -> WebSocket para a ponte em `mock` | G | Não |
+| ✔ App Android: frames -> MediaPipe -> WebSocket para a ponte em `mock` (com a câmera do celular) | G | Não |
 | Gestos dos óculos -> Go2 (F4 no robô) e medir latência | P | **Sim** |
 | Comprar adaptador Wi-Fi USB e roteador | P | Não |
 | Ver versão do firmware e do JetPack (SSH no Jetson) | P | **Sim** (só ligado) |
 | Apontar: calibração, AprilTag, conta dedo -> chão, teste dos 10 alvos com a tag numa caixa no chão | G | Não |
 | `ir_para` com o Go2 andando até o alvo | M | **Sim** |
 | Caminho B: SDK no Jetson, adaptador Wi-Fi, ponte no Jetson | M | **Sim** |
-| Alinhar docs antigos (README, arquitetura) e commit | P | Não |
+| ✔ Alinhar docs antigos (README, arquitetura) e commit | P | Não |
 
 ## O que precisa e o que não precisa do robô
 
 | Sem robô | Com robô |
 |---|---|
 | Perguntas ao amigo | Reproduzir a teleoperação do amigo |
-| Ponte em `mock`: ações, expiração, limite, pytest | Testes de parada no robô de verdade |
+| Ponte em `mock`: ações, expiração, limite, testes | Testes de parada no robô de verdade |
 | Gestos pela webcam contra a ponte em `mock`, incluindo o teste de 5 minutos sem disparo falso | Gestos da webcam e dos óculos movendo o Go2 |
 | Óculos -> celular: stream, fps, gravação de vídeos | Latência gesto -> robô se mexendo |
 | Reconhecimento de gesto em primeira pessoa | Firmware, JetPack, SDK e Wi-Fi no Jetson |
@@ -143,7 +167,7 @@ flowchart LR
 **Objetivo:** mover o Go2 pela ponte o quanto antes, aproveitando o caminho que o amigo já fez funcionar.
 
 **Perguntar ao amigo:**
-1. Qual biblioteca usou (`unitree_webrtc_connect`, `go2_webrtc_connect` ou outra).
+1. ~~Qual biblioteca usou~~ Respondida: [`unitree_webrtc_connect`](https://github.com/legion1581/unitree_webrtc_connect), com um servidor próprio na AWS entre o computador do operador e o do robô (29/10/2026).
 2. Versão do firmware do Go2 e se precisou da chave AES do robô; se sim, como conseguiu.
 3. Se o laptop estava no Wi-Fi do próprio robô (modo AP) ou os dois no mesmo roteador (modo STA).
 4. Se precisou de internet ou de conta da Unitree.
@@ -156,7 +180,7 @@ flowchart LR
 2. Backend `--robo go2-webrtc` na ponte, usando a mesma biblioteca.
 3. Ações de movimento na ponte: `frente`, `tras`, `girar_esq`, `girar_dir`, sempre com duração curta.
 4. Os dois itens de segurança "Planejado" da [arquitetura](arquitetura.md#segurança): **todo movimento expira** se não for renovado e **velocidade limitada** na ponte.
-5. Testes automáticos (pytest) do protocolo e das paradas com `--robo mock`.
+5. Testes automáticos (`unittest`) do protocolo e das paradas com `--robo mock`.
 
 **Checkpoints:**
 - [ ] Go2 obedece a um comando do terminal por WebRTC, como no setup do amigo.
@@ -166,7 +190,7 @@ flowchart LR
 - [ ] **Matar o processo da ponte no meio de um `frente`:** anotar se o Go2 para sozinho e em quanto tempo.
 - [ ] Ação fora da lista -> recusada com erro, robô não se mexe.
 - [ ] Pedir velocidade acima do limite -> ponte corta para o limite.
-- [ ] Testes passam com `pytest`.
+- [x] Testes passam (`python -m unittest`).
 
 **Decisão:** se o Go2 continuar andando quando a ponte cai, o caminho A só serve com movimentos curtos e com o controle físico sempre na mão. Nesse caso, acelerar o B.
 

@@ -10,6 +10,8 @@ camerax = "1.6.2"
 # mesma versão do mvp-gesto/requirements.txt (a 1.x não foi testada)
 mediapipe = "0.10.35"
 okhttp = "4.12.0"
+# SDK dos óculos (Meta DAT), Maven Central, sem token
+mwdat = "1.0.1"
 junit = "4.13.2"
 
 [libraries]
@@ -23,6 +25,9 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 mediapipe-tasks-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+mwdat-core = { group = "com.meta.wearable", name = "mwdat-core", version.ref = "mwdat" }
+mwdat-camera = { group = "com.meta.wearable", name = "mwdat-camera", version.ref = "mwdat" }
+mwdat-mockdevice = { group = "com.meta.wearable", name = "mwdat-mockdevice", version.ref = "mwdat" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

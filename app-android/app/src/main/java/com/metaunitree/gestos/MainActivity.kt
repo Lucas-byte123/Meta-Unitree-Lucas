@@ -12,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,6 +55,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.meta.wearable.dat.core.Wearables
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlin.coroutines.resume
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -73,12 +85,20 @@ data class EstadoTela(
     val larguraImagem: Int = 0,
     val alturaImagem: Int = 0,
     val espelhar: Boolean = false, // a pré-visualização da câmera frontal é espelhada; a imagem analisada, não
+    val fonte: String = "celular",
+    val oculos: String = "",          // estado do SDK dos óculos, para mostrar na tela
+    val quadro: android.graphics.Bitmap? = null, // último quadro dos óculos (no celular, a tela usa o PreviewView)
 )
+
+// De onde vêm os quadros: câmera do celular, óculos, ou óculos falsos do SDK (câmera do celular passando pelo SDK).
+val FONTES = listOf("celular", "óculos", "falsos")
 
 class MainActivity : ComponentActivity() {
     private val estado = MutableStateFlow(EstadoTela())
     private lateinit var preview: PreviewView
     private lateinit var camera: CameraCelular
+    private var fonte: FonteDeFrames? = null
+    private var sdkOculosPronto = false
     private lateinit var cliente: ClientePonte
     private var reconhecedor: ReconhecedorGesto? = null
     private val prefs by lazy { getSharedPreferences("gestos", MODE_PRIVATE) }
@@ -89,8 +109,30 @@ class MainActivity : ComponentActivity() {
     private var quadrosNoSegundo = 0
     private var inicioDoSegundo = 0L
 
-    private val pedirCamera = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) iniciar() else mostrar("sem permissão de câmera", VERMELHO)
+    // câmera para o CameraX e para os óculos falsos; Bluetooth para o SDK dos óculos
+    private val pedirPermissoes = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        // o resultado só traz o que foi pedido agora; a câmera pode já estar liberada de antes
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            iniciar()
+        } else {
+            mostrar("sem permissão de câmera", VERMELHO)
+        }
+    }
+
+    // Permissão de câmera dos óculos: quem concede é o app Meta AI.
+    private var esperaPermissao: CancellableContinuation<PermissionStatus>? = null
+    private val travaPermissao = Mutex()
+    private val pedirPermissaoOculos = registerForActivityResult(Wearables.RequestPermissionContract()) { r ->
+        esperaPermissao?.resume(r.getOrDefault(PermissionStatus.Denied))
+        esperaPermissao = null
+    }
+
+    private suspend fun pedirPermissaoOculos(p: Permission): PermissionStatus = travaPermissao.withLock {
+        suspendCancellableCoroutine { c ->
+            esperaPermissao = c
+            c.invokeOnCancellation { esperaPermissao = null }
+            pedirPermissaoOculos.launch(p)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,8 +167,14 @@ class MainActivity : ComponentActivity() {
                     },
                     aoTrocarCamera = {
                         camera.traseira = !camera.traseira
-                        if (reconhecedor != null) camera.iniciar(::aoChegarFrame)
+                        if (reconhecedor != null && fonteEscolhida() == "celular") camera.iniciar(::aoChegarFrame)
                     },
+                    fonteInicial = fonteEscolhida(),
+                    aoTrocarFonte = { f ->
+                        prefs.edit().putString("fonte", f).apply()
+                        if (reconhecedor != null) trocarFonte()
+                    },
+                    aoRegistrar = { if (prepararSdkOculos()) Wearables.startRegistration(this) },
                     aoParar = {
                         // não depende de gesto: manda parar direto
                         if (cliente.acao("parar")) mostrar("parar enviado", AMARELO)
@@ -139,17 +187,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            iniciar()
-        } else {
-            pedirCamera.launch(Manifest.permission.CAMERA)
-        }
+        val faltando = listOf(Manifest.permission.CAMERA, Manifest.permission.BLUETOOTH_CONNECT)
+            .filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+        if (faltando.isEmpty()) iniciar() else pedirPermissoes.launch(faltando.toTypedArray())
     }
 
     // App fora da tela não comanda nada: fecha a conexão e a ponte para o robô.
     override fun onStop() {
         super.onStop()
-        camera.parar()
+        fonte?.parar()
+        fonte = null
         cliente.desconectar()
         reconhecedor?.fechar()
         reconhecedor = null
@@ -160,11 +207,45 @@ class MainActivity : ComponentActivity() {
         if (reconhecedor != null) return
         registro.abrir()
         reconhecedor = ReconhecedorGesto(this, ::aoLer)
-        camera.iniciar(::aoChegarFrame)
+        trocarFonte()
         cliente.conectar(endereco())
     }
 
+    /** Para a fonte atual e liga a escolhida. */
+    private fun trocarFonte() {
+        fonte?.parar()
+        val f = fonteEscolhida()
+        estado.update { it.copy(fonte = f, quadro = null, oculos = "", maos = emptyList(), fps = 0) }
+        // os falsos usam a câmera traseira por dentro do SDK: fora do modo "falsos", ficam desligados
+        if (f != "falsos" && sdkOculosPronto) CameraOculos.desligarFalsos(this)
+        fonte = when (f) {
+            "celular" -> camera
+            else -> {
+                if (!prepararSdkOculos()) return
+                CameraOculos(this, lifecycleScope, falsos = f == "falsos", ::pedirPermissaoOculos) { e ->
+                    Log.i(TAG, e)
+                    estado.update { it.copy(oculos = e) }
+                }
+            }
+        }
+        fonte?.iniciar(::aoChegarFrame)
+    }
+
+    /** O SDK dos óculos é iniciado uma vez por processo, depois da permissão de Bluetooth. */
+    private fun prepararSdkOculos(): Boolean {
+        if (sdkOculosPronto) return true
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            estado.update { it.copy(oculos = "óculos: sem permissão de Bluetooth") }
+            return false
+        }
+        Wearables.initialize(this) // uma segunda chamada só devolve ALREADY_INITIALIZED
+        sdkOculosPronto = true
+        return true
+    }
+
     private fun aoChegarFrame(bitmap: android.graphics.Bitmap, tMs: Long) {
+        // no celular, o PreviewView já mostra a câmera; dos óculos, a tela mostra o próprio quadro
+        if (fonte !== camera) estado.update { it.copy(quadro = bitmap) }
         reconhecedor?.reconhecer(bitmap, tMs)
     }
 
@@ -209,7 +290,7 @@ class MainActivity : ComponentActivity() {
                 maos = l.maos,
                 larguraImagem = l.largura,
                 alturaImagem = l.altura,
-                espelhar = !camera.traseira,
+                espelhar = fonte === camera && !camera.traseira,
             )
         }
     }
@@ -219,6 +300,7 @@ class MainActivity : ComponentActivity() {
     // padrão: localhost, que chega no laptop pelo cabo com `adb reverse tcp:8765 tcp:8765`
     private fun endereco() = prefs.getString("endereco", "ws://localhost:8765")!!
     private fun robo() = prefs.getString("robo", "go2")!!
+    private fun fonteEscolhida() = prefs.getString("fonte", "celular")!!.takeIf { it in FONTES } ?: "celular"
 
     companion object {
         const val HEARTBEAT_MS = 100L
@@ -234,13 +316,22 @@ private fun Tela(
     aoConectar: (String) -> Unit,
     aoTrocarRobo: (String) -> Unit,
     aoTrocarCamera: () -> Unit,
+    fonteInicial: String,
+    aoTrocarFonte: (String) -> Unit,
+    aoRegistrar: () -> Unit,
     aoParar: () -> Unit,
 ) {
     var endereco by remember { mutableStateOf(enderecoInicial) }
     var robo by remember { mutableStateOf(roboInicial) }
+    var fonte by remember { mutableStateOf(fonteInicial) }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+        if (fonte == "celular") {
+            AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+        } else {
+            // Crop = o mesmo corte do PreviewView (FILL_CENTER), então o Esqueleto alinha igual
+            e.quadro?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        }
         Esqueleto(e, cor = if (e.gestoValido && e.acaoDoGesto != null) VERDE else AMARELO)
 
         Column(
@@ -262,6 +353,7 @@ private fun Tela(
             Spacer(Modifier.height(6.dp))
             Text("última: ${e.ultima}", color = e.corUltima, fontSize = 16.sp)
             Text("ponte: ${e.ponte}   ${e.fps} fps", color = Color.White, fontSize = 14.sp)
+            if (e.oculos.isNotEmpty()) Text(e.oculos, color = AMARELO, fontSize = 14.sp)
         }
 
         Column(
@@ -286,6 +378,13 @@ private fun Tela(
                 Button(onClick = { aoConectar(endereco.trim()) }) { Text("Conectar") }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (f in FONTES) {
+                    FilterChip(selected = fonte == f, onClick = { fonte = f; aoTrocarFonte(f) }, label = { Text(f) })
+                }
+                Spacer(Modifier.weight(1f))
+                if (fonte == "óculos") OutlinedButton(onClick = aoRegistrar) { Text("Registrar") }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (r in MAPAS.keys) {
                     FilterChip(
                         selected = robo == r,
@@ -294,7 +393,7 @@ private fun Tela(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                OutlinedButton(onClick = aoTrocarCamera) { Text("Trocar câmera") }
+                if (fonte == "celular") OutlinedButton(onClick = aoTrocarCamera) { Text("Trocar câmera") }
             }
             Button(
                 onClick = aoParar,

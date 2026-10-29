@@ -48,7 +48,25 @@ adb pull /sdcard/Android/data/com.metaunitree.gestos/files/ csv/
 | `RegistroCsv.kt` | CSV com o gesto e a confiança de cada quadro | `--log` |
 | `MainActivity.kt` | Liga tudo e desenha a tela (Compose), com os 21 pontos da mão por cima da câmera: verde quando o gesto vale | `main()` e `desenhar()` |
 
-Para os óculos: uma `CameraOculos : FonteDeFrames` com o SDK Meta DAT, no lugar da `CameraCelular`.
+| `CameraOculos.kt` | Câmera dos óculos pelo SDK Meta DAT 1.0.1: registro no Meta AI, permissão, sessão, stream. Também os óculos falsos do MockDeviceKit | — |
+| `ConversorI420.kt` | Quadro dos óculos (YUV I420) -> Bitmap | — |
+
+## Fontes de imagem
+
+Na tela, escolha a fonte:
+
+| Fonte | O que usa | Para quê |
+|---|---|---|
+| `celular` | Câmera do celular (CameraX) | Desenvolver sem os óculos |
+| `falsos` | MockDeviceKit do SDK: óculos de mentira, já registrados e com permissão, transmitindo a câmera traseira do celular | Testar o caminho do SDK dos óculos sem os óculos |
+| `óculos` | Ray-Ban Meta pelo SDK, a 360x640 e 15 fps | O uso de verdade |
+
+Para os óculos de verdade, uma vez só:
+1. No app Meta AI: **Configurações > Informações do app**, tocar 5 vezes no **número da versão** e ligar o **Developer Mode** ([Meta](https://wearables.developer.meta.com/docs/develop/dat/getting-started-toolkit/)). Com ele, o app roda sem ID do Wearables Developer Center (`"0"` em `app/build.gradle.kts`).
+2. Óculos pareados e conectados no Meta AI.
+3. No nosso app, fonte `óculos` e **Registrar**: abre o Meta AI para aprovar. Depois, o Meta AI pede a permissão de câmera dos óculos.
+
+Só um app de terceiros fica registrado por vez no Developer Mode: registrar o nosso desregistra o app de exemplo da Meta, e vice-versa.
 
 ## Segurança
 
@@ -60,7 +78,7 @@ Para os óculos: uma `CameraOculos : FonteDeFrames` com o SDK Meta DAT, no lugar
 
 Testado em 28/10/2026 num Galaxy S25+ (Android 17), pelo cabo com `adb reverse`, com a ponte em `mock`:
 
-- Build e 12 testes do filtro passando.
+- Build e testes passando (12 do filtro, 3 do conversor I420).
 - Conecta na ponte e processa ~15 fps.
 - App para segundo plano -> ponte mostra `cliente desconectado -> parar`; ao voltar, reconecta.
 

@@ -17,18 +17,20 @@ Antes de mudar algo grande, leia: [`docs/plano.md`](docs/plano.md) (semanas e ch
 
 | Caminho | O que é |
 |---|---|
-| `mvp-gesto/ponte.py` | Servidor WebSocket; valida comandos, limita velocidade, para o robô. Backends `mock`, `go2`, `g1` (falta `go2-webrtc`). O comentário do topo é a definição do protocolo. |
+| `mvp-gesto/ponte.py` | Servidor WebSocket; valida comandos, limita velocidade, para o robô. Backends `mock`, `go2`, `g1` e `go2-webrtc` (este com `requirements-webrtc.txt`). O comentário do topo é a definição do protocolo. |
 | `mvp-gesto/filtro.py` | Filtro anti-disparo: gesto de cada frame -> ação. Sem dependências. |
 | `mvp-gesto/gesto_webcam.py` | MediaPipe na webcam ou em vídeo -> filtro -> ponte. Referência para o app Android. |
 | `mvp-gesto/teclado.py` | Cliente de teste: manda ações digitadas. |
+| `mvp-gesto/checar_go2.py` | 1º passo da sessão com o robô: conecta por WebRTC e lê o modo, sem mover nada. |
 | `mvp-gesto/tests/` | `unittest` do filtro e da ponte, sem robô e sem câmera. |
-| `app-android/` | App Android: câmera do celular -> MediaPipe -> filtro -> ponte. Como rodar em [`app-android/README.md`](app-android/README.md); especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
+| `app-android/` | App Android: câmera do celular ou dos óculos (SDK Meta DAT) -> MediaPipe -> filtro -> ponte. Como rodar em [`app-android/README.md`](app-android/README.md); especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
 
 ## App Android (`app-android/`)
 
 - Mesma configuração do app de exemplo do SDK dos óculos: `minSdk 31`, `compileSdk 36`, JDK 17, Kotlin 2.2, Compose.
 - SDK dos óculos (Meta DAT) 1.0.1, no Maven Central, sem token. Para consultar a documentação dele, use o MCP `https://mcp.developer.meta.com/wearables` (público, sem autenticação) em vez de adivinhar a API.
 - Testar com o celular no cabo: `adb reverse tcp:8765 tcp:8765` e a ponte em `ws://localhost:8765`.
+- Óculos: quadros pedidos com `compressVideo = false` chegam em YUV I420 (`ConversorI420.kt`). A fonte "falsos" usa o MockDeviceKit do SDK com a câmera traseira do celular, para testar o caminho do SDK sem os óculos.
 
 ## Comandos
 
@@ -37,7 +39,7 @@ Tudo do Python roda **de dentro de `mvp-gesto/`** e com o ambiente virtual ativo
 ```
 cd mvp-gesto
 python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-python -m unittest                  # 29 testes, ~3 s; rodar antes de todo commit que mexe em Python
+python -m unittest                  # 42 testes, ~4 s; rodar antes de todo commit que mexe em Python
 python ponte.py --robo mock         # terminal 1
 python gesto_webcam.py              # terminal 2 (webcam)
 python gesto_webcam.py --video x.mp4 --ponte nenhuma --log x.csv   # medir em vídeo gravado
@@ -55,6 +57,7 @@ O código comanda robôs de verdade, de 15 kg (Go2) e 35 kg (G1).
 - **`parar` nunca espera:** sem cooldown, sem fila na frente, sempre o último comando a chegar no robô.
 - **Desconexão ou heartbeat perdido = parar.** Qualquer cliente novo (o app, por exemplo) manda heartbeat a cada 100 ms a partir do processamento de frames, e fecha a conexão quando sai de cena.
 - **Lista fechada de ações.** Nada de comando livre vindo do celular, de LLM ou de voz sem passar pela validação da ponte.
+- **A chave AES do Go2 (`UNITREE_AES_128_KEY`) é segredo:** só em variável de ambiente, nunca em arquivo do repositório nem na linha de comando.
 - **G1: nunca `Damp`** (tira o torque e o humanoide cai). Primeiros testes sempre no pórtico.
 - A ponte **não roda no celular**: o vigia de segurança precisa sobreviver se o celular cair.
 

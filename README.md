@@ -49,10 +49,10 @@ O caminho A (laptop + WebRTC) serve para começar logo; o B (Jetson + SDK oficia
 | Pesquisa de SDKs, rede do Go2 e projetos parecidos | Feita e conferida |
 | Arquitetura e plano semanal | Escritos |
 | Ponte WebSocket -> SDK Unitree | Escrita, testada só em modo mock |
-| Backend WebRTC da ponte (caminho A) | Falta |
+| Backend WebRTC da ponte (caminho A) | Escrito (`--robo go2-webrtc`), testado com uma imitação da biblioteca; não rodou no robô |
 | Gesto pela webcam (no lugar dos óculos) | Testado com a webcam ao vivo, ponte em mock |
 | App Android, com a câmera do celular | Esqueleto rodando no celular contra a ponte em mock; gestos ao vivo a conferir ([app](app-android/)) |
-| App Android com o SDK dos óculos | Falta ([guia](docs/guia-app-android.md)) |
+| App Android com o SDK dos óculos | Escrito (`CameraOculos`, com modo de óculos falsos); ainda não rodou ([app](app-android/)) |
 | Teste com óculos e robôs reais | Falta |
 
 A ordem de trabalho, semana a semana, está no [plano](docs/plano.md#semanas).

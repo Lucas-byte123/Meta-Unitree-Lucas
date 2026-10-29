@@ -16,6 +16,11 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "0.1"
+
+    // SDK dos óculos: com o Developer Mode ligado no app Meta AI, os dois valem "0".
+    // Sem Developer Mode, vêm do projeto no Wearables Developer Center.
+    manifestPlaceholders["mwdat_application_id"] = "0"
+    manifestPlaceholders["mwdat_client_token"] = "0"
   }
 
   buildFeatures { compose = true }
@@ -41,6 +46,9 @@ dependencies {
   implementation(libs.androidx.camera.view)
   implementation(libs.mediapipe.tasks.vision)
   implementation(libs.okhttp)
+  implementation(libs.mwdat.core)
+  implementation(libs.mwdat.camera)
+  implementation(libs.mwdat.mockdevice)
 
   testImplementation(libs.junit)
 }
