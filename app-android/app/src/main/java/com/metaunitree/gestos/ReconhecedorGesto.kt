@@ -8,8 +8,22 @@ import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.gesturerecognizer.GestureRecognizer
 
-/** O que o MediaPipe viu num frame. gesto == null: sem mão ou mão sem gesto conhecido. */
-data class Leitura(val gesto: String?, val confianca: Float, val temMao: Boolean, val tMs: Long)
+/** Um dos 21 pontos da mão, em fração da imagem (0 a 1). */
+data class PontoMao(val x: Float, val y: Float)
+
+/**
+ * O que o MediaPipe viu num frame. gesto == null: sem mão ou mão sem gesto conhecido.
+ * maos: os 21 pontos de cada mão; largura e altura: da imagem analisada, para desenhar por cima da câmera.
+ */
+data class Leitura(
+    val gesto: String?,
+    val confianca: Float,
+    val temMao: Boolean,
+    val tMs: Long,
+    val maos: List<List<PontoMao>> = emptyList(),
+    val largura: Int = 0,
+    val altura: Int = 0,
+)
 
 /**
  * MediaPipe Gesture Recognizer em LIVE_STREAM. O resultado chega em outra thread,
@@ -23,11 +37,12 @@ class ReconhecedorGesto(context: Context, aoLer: (Leitura) -> Unit) {
         val opcoes = GestureRecognizer.GestureRecognizerOptions.builder()
             .setBaseOptions(BaseOptions.builder().setModelAssetPath("gesture_recognizer.task").build())
             .setRunningMode(RunningMode.LIVE_STREAM)
-            .setResultListener { r, _ ->
+            .setResultListener { r, imagem ->
                 val melhor = r.gestures().firstOrNull()?.firstOrNull()
                 // o MediaPipe chama de "None" uma mão sem gesto conhecido
                 val gesto = melhor?.categoryName()?.takeIf { it != "None" }
-                aoLer(Leitura(gesto, melhor?.score() ?: 0f, r.landmarks().isNotEmpty(), r.timestampMs()))
+                val maos = r.landmarks().map { mao -> mao.map { PontoMao(it.x(), it.y()) } }
+                aoLer(Leitura(gesto, melhor?.score() ?: 0f, maos.isNotEmpty(), r.timestampMs(), maos, imagem.width, imagem.height))
             }
             .setErrorListener { e -> Log.e(TAG, "erro no MediaPipe", e) }
             .build()

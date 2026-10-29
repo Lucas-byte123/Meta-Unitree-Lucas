@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -67,6 +69,10 @@ data class EstadoTela(
     val corUltima: Color = Color.White,
     val ponte: String = "desconectada",
     val fps: Int = 0,
+    val maos: List<List<PontoMao>> = emptyList(),
+    val larguraImagem: Int = 0,
+    val alturaImagem: Int = 0,
+    val espelhar: Boolean = false, // a pré-visualização da câmera frontal é espelhada; a imagem analisada, não
 )
 
 class MainActivity : ComponentActivity() {
@@ -200,6 +206,10 @@ class MainActivity : ComponentActivity() {
                 gestoValido = valido,
                 progresso = f.progresso(l.tMs),
                 fps = fps ?: it.fps,
+                maos = l.maos,
+                larguraImagem = l.largura,
+                alturaImagem = l.altura,
+                espelhar = !camera.traseira,
             )
         }
     }
@@ -231,6 +241,7 @@ private fun Tela(
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(factory = { preview }, modifier = Modifier.fillMaxSize())
+        Esqueleto(e, cor = if (e.gestoValido && e.acaoDoGesto != null) VERDE else AMARELO)
 
         Column(
             Modifier.fillMaxWidth().background(Color(0xAA000000)).systemBarsPadding().padding(12.dp)
@@ -292,6 +303,36 @@ private fun Tela(
             ) {
                 Text("PARAR", fontSize = 28.sp, fontWeight = FontWeight.Bold)
             }
+        }
+    }
+}
+
+// Ligações entre os 21 pontos da mão do MediaPipe (punho = 0, pontas dos dedos = 4, 8, 12, 16, 20).
+private val LIGACOES_MAO = listOf(
+    0 to 1, 1 to 2, 2 to 3, 3 to 4,
+    0 to 5, 5 to 6, 6 to 7, 7 to 8,
+    5 to 9, 9 to 10, 10 to 11, 11 to 12,
+    9 to 13, 13 to 14, 14 to 15, 15 to 16,
+    13 to 17, 17 to 18, 18 to 19, 19 to 20, 0 to 17,
+)
+
+/** Desenha a mão que o MediaPipe vê, por cima da câmera. Verde quando o gesto vale. */
+@Composable
+private fun Esqueleto(e: EstadoTela, cor: Color) {
+    if (e.maos.isEmpty() || e.larguraImagem == 0) return
+    Canvas(Modifier.fillMaxSize()) {
+        // a pré-visualização preenche a tela cortando as bordas (FILL_CENTER); a mesma conta aqui
+        val escala = maxOf(size.width / e.larguraImagem, size.height / e.alturaImagem)
+        val dx = (size.width - e.larguraImagem * escala) / 2
+        val dy = (size.height - e.alturaImagem * escala) / 2
+        fun ponto(p: PontoMao): Offset {
+            val x = p.x * e.larguraImagem * escala + dx
+            return Offset(if (e.espelhar) size.width - x else x, p.y * e.alturaImagem * escala + dy)
+        }
+        for (mao in e.maos) {
+            if (mao.size < 21) continue
+            for ((a, b) in LIGACOES_MAO) drawLine(cor, ponto(mao[a]), ponto(mao[b]), strokeWidth = 6f)
+            for (p in mao) drawCircle(Color.White, radius = 9f, center = ponto(p))
         }
     }
 }

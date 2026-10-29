@@ -46,7 +46,7 @@ adb pull /sdcard/Android/data/com.metaunitree.gestos/files/ csv/
 | `FiltroGesto.kt` | Filtro anti-disparo e os mapas gesto -> ação | `filtro.py`, `MAPA` |
 | `ClientePonte.kt` | WebSocket (OkHttp): ações, heartbeat, acks | `websockets` em `gesto_webcam.py` |
 | `RegistroCsv.kt` | CSV com o gesto e a confiança de cada quadro | `--log` |
-| `MainActivity.kt` | Liga tudo e desenha a tela (Compose) | `main()` e `desenhar()` |
+| `MainActivity.kt` | Liga tudo e desenha a tela (Compose), com os 21 pontos da mão por cima da câmera: verde quando o gesto vale | `main()` e `desenhar()` |
 
 Para os óculos: uma `CameraOculos : FonteDeFrames` com o SDK Meta DAT, no lugar da `CameraCelular`.
 
