@@ -20,9 +20,9 @@ Antes de mudar algo grande, leia: [`docs/plano.md`](docs/plano.md) (semanas e ch
 | `mvp-gesto/ponte.py` | Servidor WebSocket; valida comandos, limita velocidade, para o robô. Backends `mock`, `go2`, `g1` e `go2-webrtc` (este com `requirements-webrtc.txt`). O comentário do topo é a definição do protocolo. |
 | `mvp-gesto/filtro.py` | Filtro anti-disparo: gesto de cada frame -> ação. Sem dependências. |
 | `mvp-gesto/gesto_webcam.py` | MediaPipe na webcam ou em vídeo -> filtro -> ponte. Referência para o app Android. |
-| `mvp-gesto/teclado.py` | Cliente de teste: manda ações digitadas. |
+| `mvp-gesto/teclado.py` | Cliente de teste: manda ações digitadas, com heartbeat. `segurar` e `teste_heartbeat` servem para os testes de parada. |
 | `mvp-gesto/checar_go2.py` | 1º passo da sessão com o robô: conecta por WebRTC e lê o modo, sem mover nada. |
-| `mvp-gesto/tests/` | `unittest` do filtro e da ponte, sem robô e sem câmera. |
+| `mvp-gesto/tests/` | `unittest` do filtro, da ponte e do teclado, sem robô e sem câmera. |
 | `app-android/` | App Android: câmera do celular ou dos óculos (SDK Meta DAT) -> MediaPipe -> filtro -> ponte. Como rodar em [`app-android/README.md`](app-android/README.md); especificação em [`docs/guia-app-android.md`](docs/guia-app-android.md). |
 
 ## App Android (`app-android/`)
@@ -39,11 +39,11 @@ Tudo do Python roda **de dentro de `mvp-gesto/`** e com o ambiente virtual ativo
 ```
 cd mvp-gesto
 python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-python -m unittest                  # 42 testes, ~4 s; rodar antes de todo commit que mexe em Python
+python -m unittest                  # 46 testes, ~8 s; rodar antes de todo commit que mexe em Python
 python ponte.py --robo mock         # terminal 1
 python gesto_webcam.py              # terminal 2 (webcam)
 python gesto_webcam.py --video x.mp4 --ponte nenhuma --log x.csv   # medir em vídeo gravado
-python teclado.py                   # no lugar da webcam: frente, parar, mover 0.2 0 0 ...
+python teclado.py                   # no lugar da webcam: frente, parar, mover 0.2 0 0, segurar frente 3, teste_heartbeat
 ```
 
 O modelo `gesture_recognizer.task` é baixado sozinho na primeira execução (fica fora do git). Se o `pip` falhar com `SSLEOFError` no `files.pythonhosted.org`, é a rede ou o sandbox, não o `requirements.txt`: tente de novo fora do sandbox.

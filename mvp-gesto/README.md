@@ -41,9 +41,9 @@ Além dos truques, a ponte aceita movimento: `frente`, `tras`, `girar_esq`, `gir
 | `ponte.py` | Jetson do robô, ou laptop no caminho A | Servidor WebSocket; valida e chama o SDK (Go2, G1 ou mock) ou, no caminho A, a biblioteca WebRTC (`go2-webrtc`). Limita velocidade, faz movimento expirar e para o robô se o cliente cair ou o heartbeat parar. |
 | `filtro.py` | Laptop (e, traduzido, o app) | Filtro anti-disparo: gesto de cada quadro -> ação. Sem dependências. |
 | `gesto_webcam.py` | Laptop | MediaPipe na webcam ou num vídeo -> filtro -> ponte. Referência para o app Android. |
-| `teclado.py` | Laptop | Manda ações e velocidades digitadas. |
+| `teclado.py` | Laptop | Manda ações e velocidades digitadas, com heartbeat. `segurar` e `teste_heartbeat` servem para os testes de parada ([roteiro](../docs/plano.md#roteiro-da-1ª-sessão-com-o-robô)). |
 | `checar_go2.py` | Laptop | Conecta ao Go2 por WebRTC e lê o modo de movimento, sem mover nada. Primeiro passo da sessão com o robô. |
-| `tests/` | Laptop | Testes do filtro e da ponte, sem robô e sem câmera. |
+| `tests/` | Laptop | Testes do filtro, da ponte e do teclado, sem robô e sem câmera. |
 
 Instalação (Python 3.11; o MediaPipe ainda não tem versão para o 3.14):
 
@@ -52,7 +52,7 @@ cd mvp-gesto
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m unittest          # 42 testes, ~4 s
+python -m unittest          # 46 testes, ~8 s
 ```
 
 O modelo de gestos (`gesture_recognizer.task`) é baixado sozinho na primeira execução do `gesto_webcam.py`.

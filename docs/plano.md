@@ -12,11 +12,11 @@
 
 | Parte | Situação |
 |---|---|
-| Ponte (`ponte.py`) | Pronta em `mock`: lista fechada, limite de velocidade, movimento que expira, parada por heartbeat e desconexão. 42 testes |
+| Ponte (`ponte.py`) | Pronta em `mock`: lista fechada, limite de velocidade, movimento que expira, parada por heartbeat e desconexão. 46 testes |
 | Gesto na webcam (`gesto_webcam.py`) | Testado ao vivo com a ponte em `mock` |
 | App Android com a câmera do celular | Pronto e testado no celular com a ponte em `mock`: 4 de 4 gestos nas duas câmeras, depois do ajuste do limiar para 0,65 / 0,55 ([dados](../dados/README.md)) |
 | App Android com os óculos | `CameraOculos` escrita (SDK Meta DAT 1.0.1, com modo de óculos falsos do MockDeviceKit); **ainda não rodou** |
-| Backend `go2-webrtc` (caminho A) | Escrito com a [`unitree_webrtc_connect`](https://github.com/legion1581/unitree_webrtc_connect), a biblioteca que o amigo usou; testado com uma imitação dela; **não rodou no robô**. `checar_go2.py` conecta e lê o modo sem mover nada |
+| Backend `go2-webrtc` (caminho A) | Escrito com a [`unitree_webrtc_connect`](https://github.com/legion1581/unitree_webrtc_connect), a biblioteca que o amigo usou; testado com uma imitação dela. Em 02/11/2026, a biblioteca de verdade foi instalada e conferida no Mac: nomes da API, IDs dos comandos, formato do `Move` e erros sem robô. **Não rodou no robô**. `checar_go2.py` conecta e lê o modo sem mover nada |
 | Robô | Nenhuma sessão ainda. Falta: chave AES (firmware ≥ 1.1.15), modo de rede (AP ou STA) e o que o robô faz quando a conexão cai |
 
 ## Semanas
@@ -41,13 +41,25 @@ Depois disso: levar o apontar para os óculos (F4), terminar o caminho B e o G1 
 
 Sem gesto nenhum: comandos digitados no `teclado.py`, para que um problema aponte para a conexão com o robô e não para o reconhecimento. Segunda pessoa com o controle físico o tempo todo. Robô de pé e no modo normal antes de começar.
 
-1. `python checar_go2.py --ip <ip>` (ou `--modo ap`): conecta e lê o modo, **sem mover nada**. Confirma rede e chave AES.
-2. `python ponte.py --robo go2-webrtc --ip <ip>` e, em outro terminal, `python teclado.py`.
+**Antes do dia** (nada disso precisa do robô):
+- No laptop da sessão: `brew install portaudio` e `pip install -r requirements-webrtc.txt`, no mesmo ambiente do MediaPipe. A instalação acrescenta pacotes e, dos que já estavam lá, só atualiza o `certifi`; MediaPipe, numpy, OpenCV e websockets ficam iguais (conferido em 02/11/2026). Depois, `python -m unittest` e `python checar_go2.py --modo ap` longe do robô: deve falhar em uns 4 s com `LocalSignalingPortError`, o que confirma a instalação. Já feito no Mac usado até aqui, em 02/11/2026.
+- Versão do firmware do Go2. Se for 1.1.15 ou mais nova, a chave AES, buscada na conta Unitree em que o robô foi vinculado: `export UNITREE_AES_128_KEY=$(unitree-fetch-aes-key --email <conta> --device-type Go2 --sn <número de série> -q)`. A senha é pedida no terminal, e a chave não aparece na tela nem vai para arquivo. Não esquecer o `--device-type Go2`: o padrão da ferramenta é `G1`.
+- Modo de rede: AP (laptop no Wi-Fi do robô) ou STA (os dois no mesmo roteador, com o IP do robô).
+- Um segundo celular para filmar os testes de parada em câmera lenta.
+
+1. Desconectar o app da Unitree do robô: o Go2 recusa um segundo cliente WebRTC (`RobotBusyError` na [biblioteca](https://github.com/legion1581/unitree_webrtc_connect)). Depois, `python checar_go2.py --ip <ip>` (ou `--modo ap`): conecta e lê o modo, **sem mover nada**. Confirma rede e chave AES.
+2. `python ponte.py --robo go2-webrtc --ip <ip>` e, em outro terminal, `python teclado.py`. O teclado manda heartbeat a cada 100 ms, como o app.
 3. `parar` com o robô parado.
 4. Truques com o robô parado no lugar: `cumprimentar`, `sentar`, `levantar`.
 5. `frente` (1 s a 0,2 m/s) numa área livre; depois `girar_esq`.
-6. **Testes de parada:** fechar o `teclado.py` no meio de um `frente`; depois matar a ponte (Ctrl+C) no meio de um `frente` e anotar se o robô para sozinho e em quanto tempo.
-7. Se tudo acima passar: gestos do celular -> Go2.
+6. **Testes de parada**, todos com o robô andando e filmados para medir quanto ele leva para parar. O log da ponte diz quem parou: `heartbeat perdido`, `cliente desconectado` ou `movimento expirou`.
+   1. `teste_heartbeat` no teclado: anda e, 0,3 s depois, corta o heartbeat sem fechar a conexão. Esperado: `heartbeat perdido -> parar` antes de o movimento expirar.
+   2. `segurar frente 3` (renova o `frente` por 3 s) e, no meio, Ctrl+C no teclado. Esperado: `cliente desconectado -> parar`.
+   3. **Queda da ponte:** `segurar frente 3` e, no meio, `pkill -9 -f ponte.py` em outro terminal. Anotar se o robô para sozinho e em quanto tempo. É o que aconteceria se o celular falasse direto com o robô e o app morresse. **Não use Ctrl+C na ponte para este teste:** ela fecha a conexão e manda `StopMove` antes de sair (conferido em `mock` em 02/11/2026); o `kill -9` não deixa.
+   4. **Queda do Wi-Fi:** ligar a ponte de novo, `segurar frente 3` e, no meio, desligar o Wi-Fi do laptop. Anotar o mesmo. Depois, reiniciar a ponte.
+
+   Se o robô não parar sozinho em 3 ou 4, a segunda pessoa para pelo controle, e vale a [decisão da F1-A](#f1-a-ponte-no-laptop-webrtc-até-o-go2).
+7. Se tudo acima passar: gestos do celular -> Go2. Só truques e `parar`, porque o mapa do Go2 não tem gesto de andar.
 8. Anotar firmware, latência percebida e qualquer recusa do robô.
 
 ## Tarefas por esforço e valor
@@ -185,9 +197,9 @@ flowchart LR
 **Checkpoints:**
 - [ ] Go2 obedece a um comando do terminal por WebRTC, como no setup do amigo.
 - [ ] `teclado.py` manda `cumprimentar` e `frente` para a ponte, e o Go2 obedece.
-- [ ] Parar de mandar heartbeat -> Go2 para em até 0,3 s.
+- [ ] Parar de mandar heartbeat (`teste_heartbeat` no teclado) -> Go2 para em até 0,3 s.
 - [ ] Fechar o cliente -> Go2 para.
-- [ ] **Matar o processo da ponte no meio de um `frente`:** anotar se o Go2 para sozinho e em quanto tempo.
+- [ ] **Matar a ponte com `kill -9` no meio de um `segurar frente 3`:** anotar se o Go2 para sozinho e em quanto tempo. Ctrl+C não serve, porque a ponte manda `StopMove` antes de sair. Repetir desligando o Wi-Fi do laptop.
 - [ ] Ação fora da lista -> recusada com erro, robô não se mexe.
 - [ ] Pedir velocidade acima do limite -> ponte corta para o limite.
 - [x] Testes passam (`python -m unittest`).

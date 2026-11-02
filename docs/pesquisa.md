@@ -126,6 +126,13 @@ Vem junto com o SDK e finge um par de óculos pareado dentro do app ([documenta�
 - O exemplo `examples/go2/data_channel/sportmode/sportmode.py` anda a 0,5 m/s, troca para o modo "ai" e manda o robô plantar bananeira.
 - Depende do `pyaudio`, que precisa do `portaudio` instalado no sistema.
 
+**Conferido com a biblioteca instalada, em 02/11/2026, sem robô:**
+- Os `api_id` de `SPORT_CMD` e `SPORT_CMD_MCF` são iguais para `Hello` 1016, `Sit` 1009, `RiseSit` 1010, `Stretch` 1017, `Move` 1008, `StopMove` 1003 e `Damp` 1001.
+- O `Move` sem resposta do exemplo [`sportmode_mcf.py`](https://github.com/legion1581/unitree_webrtc_connect/blob/v2.2.0/examples/go2/data_channel/sportmode_mcf/sportmode_mcf.py) vai por `publish_without_callback`, com tipo `msg` e `policy.noreply`, e parâmetro `{"x", "y", "z"}`. O comentário do exemplo diz que é o mesmo formato do SDK WebRTC da Unitree. A ponte faz igual.
+- `publish_without_callback` com o canal fechado não envia nada e não dá erro. `publish_request_new` dá erro.
+- Erros com nome próprio: `LocalSignalingPortError` (robô fora de alcance), `AesKeyRequiredError`, `AesKeyRejectedError`, `RobotBusyError` (outro cliente WebRTC conectado: "Only one peer at a time"), `NoSdpAnswerError` e `DataChannelTimeoutError`. Sem robô na rede, a conexão falha em uns 4 s com `LocalSignalingPortError`.
+- `unitree-fetch-aes-key` usa `--device-type G1` por padrão: para o Go2, passar `--device-type Go2`. Com `--sn <número de série> -q`, imprime só a chave.
+
 **Firmware do Go2:** o firmware 1.1.6 mudou os IDs das APIs de sport, e SDK Python antigo dá `3203 unknown api`. O [PR #76](https://github.com/unitreerobotics/unitree_sdk2_python/pull/76) alinha o SDK Python com essa versão.
 
 ### Go2: `SportClient`

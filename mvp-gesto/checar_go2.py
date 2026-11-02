@@ -19,6 +19,18 @@ from ponte import RoboGo2WebRTC
 
 API_LER_MODO = 1001  # motion_switcher: só lê o modo atual (1002 troca; aqui nunca)
 
+# o que fazer para cada erro da biblioteca (nomes das classes de unitree_webrtc_connect 2.2.0)
+DICAS = {
+    "LocalSignalingPortError": "O laptop não alcança o robô: confira o IP, se o robô está ligado e se os dois "
+                               "estão na mesma rede (no --modo ap, o laptop no Wi-Fi do próprio robô).",
+    "AesKeyRequiredError": "Firmware >= 1.1.15 precisa da chave AES do robô:\n"
+                           "  export UNITREE_AES_128_KEY=$(unitree-fetch-aes-key --email <conta> "
+                           "--device-type Go2 --sn <número de série> -q)",
+    "AesKeyRejectedError": "A chave não é a deste robô. Busque de novo com unitree-fetch-aes-key "
+                           "(--device-type Go2), na conta Unitree em que ele foi vinculado.",
+    "RobotBusyError": "Outro cliente WebRTC está conectado, em geral o app da Unitree: desconecte-o e tente de novo.",
+}
+
 
 def ler_modo(robo):
     """Pergunta ao robô o modo de movimento atual. Só leitura."""
@@ -46,8 +58,8 @@ def main():
         robo = RoboGo2WebRTC(a.ip, chave, a.modo)
     except Exception as e:
         print(f"\nNão conectou: {type(e).__name__}: {e}")
-        if "Aes" in type(e).__name__ or not chave:
-            print("Firmware >= 1.1.15 precisa da chave: unitree-fetch-aes-key --email ... --device-type Go2")
+        if type(e).__name__ in DICAS:
+            print(DICAS[type(e).__name__])
         sys.exit(1)
     print("Conectado.")
     try:
