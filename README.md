@@ -48,12 +48,12 @@ O caminho A (laptop + WebRTC) serve para começar logo; o B (Jetson + SDK oficia
 |---|---|
 | Pesquisa de SDKs, rede do Go2 e projetos parecidos | Feita e conferida |
 | Arquitetura e plano semanal | Escritos |
-| Ponte WebSocket -> SDK Unitree | Escrita, testada só em modo mock |
-| Backend WebRTC da ponte (caminho A) | Escrito (`--robo go2-webrtc`), testado com uma imitação da biblioteca; não rodou no robô |
+| Ponte WebSocket -> SDK Unitree (DDS, caminho B) | Escrita, testada só em modo mock |
+| Backend WebRTC da ponte (caminho A) | **Testado no robô em 05/11/2026**: Go2 comum (não EDU), firmware 1.1.7, modo `mcf`, laptop Windows no mesmo roteador. Truques (`sentar`, `levantar`, `cumprimentar`) e `parar` funcionam; movimento (`frente`, girar) ainda não testado |
 | Gesto pela webcam (no lugar dos óculos) | Testado com a webcam ao vivo, ponte em mock |
-| App Android, com a câmera do celular | Esqueleto rodando no celular contra a ponte em mock; gestos ao vivo a conferir ([app](app-android/)) |
-| App Android com o SDK dos óculos | Escrito (`CameraOculos`, com modo de óculos falsos); ainda não rodou ([app](app-android/)) |
-| Teste com óculos e robôs reais | Falta |
+| App Android, com a câmera do celular | 4 de 4 gestos no Galaxy S20 FE contra a ponte em mock, 05/11/2026 ([app](app-android/)) |
+| App Android com o SDK dos óculos | **Rodando nos Ray-Ban Meta** em 05/11/2026: vídeo 360x640 a 15 fps, 4 de 4 gestos ([app](app-android/)) |
+| Teste com óculos e robô real | **Feito no Go2 em 05/11/2026**: os 4 gestos dos óculos chegaram ao robô. Faltam os testes de movimento e de queda da ponte ([pendências](PENDENCIAS.md)) |
 
 A ordem de trabalho, semana a semana, está no [plano](docs/plano.md#semanas).
 

@@ -35,7 +35,7 @@ flowchart LR
    python3.11 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
-   python -m unittest              # 46 testes, ~8 s
+   python -m unittest              # 49 testes, ~13 s
    ```
    Depois, em dois terminais (os dois em `mvp-gesto/` com o `source .venv/bin/activate`):
    ```

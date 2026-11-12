@@ -12,7 +12,7 @@
 
 | Parte | Situação |
 |---|---|
-| Ponte (`ponte.py`) | Pronta em `mock`: lista fechada, limite de velocidade, movimento que expira, parada por heartbeat e desconexão. 46 testes |
+| Ponte (`ponte.py`) | Pronta em `mock`: lista fechada, limite de velocidade, movimento que expira, parada por heartbeat e desconexão. 49 testes |
 | Gesto na webcam (`gesto_webcam.py`) | Testado ao vivo com a ponte em `mock` |
 | App Android com a câmera do celular | Pronto e testado no celular com a ponte em `mock`: 4 de 4 gestos nas duas câmeras, depois do ajuste do limiar para 0,65 / 0,55 ([dados](../dados/README.md)) |
 | App Android com os óculos | `CameraOculos` escrita (SDK Meta DAT 1.0.1, com modo de óculos falsos do MockDeviceKit); **ainda não rodou** |

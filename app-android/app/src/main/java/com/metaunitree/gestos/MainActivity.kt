@@ -59,7 +59,10 @@ import androidx.lifecycle.lifecycleScope
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import com.meta.wearable.dat.core.types.DeviceCompatibility
+import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -174,7 +177,19 @@ class MainActivity : ComponentActivity() {
                         prefs.edit().putString("fonte", f).apply()
                         if (reconhecedor != null) trocarFonte()
                     },
-                    aoRegistrar = { if (prepararSdkOculos()) Wearables.startRegistration(this) },
+                    aoRegistrar = {
+                        // Só registra se ainda não estiver registrado. Na issue
+                        // meta-wearables-dat-android#192, a Meta recomenda isso: registrar de novo
+                        // com o app já registrado foi ligado a sessões recusadas pelos óculos.
+                        if (prepararSdkOculos()) {
+                            if (Wearables.registrationState.value == RegistrationState.REGISTERED) {
+                                estado.update { it.copy(oculos = "óculos: já registrado (não precisa registrar de novo)") }
+                            } else {
+                                Wearables.startRegistration(this)
+                            }
+                        }
+                    },
+                    aoAtualizarOculos = { atualizarOculos() },
                     aoParar = {
                         // não depende de gesto: manda parar direto
                         if (cliente.acao("parar")) mostrar("parar enviado", AMARELO)
@@ -240,7 +255,62 @@ class MainActivity : ComponentActivity() {
         }
         Wearables.initialize(this) // uma segunda chamada só devolve ALREADY_INITIALIZED
         sdkOculosPronto = true
+        diagnosticarOculos()
         return true
+    }
+
+    /**
+     * Anota no log (tag "gestos") o que o SDK sabe dos óculos: registro, Developer Mode e,
+     * para cada óculos, firmware, compatibilidade e conexão. Como o app de exemplo da Meta,
+     * avisa na tela quando a compatibilidade pede atualização.
+     */
+    private fun diagnosticarOculos() {
+        Log.i(TAG, "diagnóstico: isDevMode=${Wearables.isDevMode}")
+        lifecycleScope.launch {
+            Wearables.registrationState.collect { Log.i(TAG, "diagnóstico: registro=$it") }
+        }
+        val acompanhados = mutableSetOf<Any>()
+        lifecycleScope.launch {
+            Wearables.devices.collect { ids ->
+                Log.i(TAG, "diagnóstico: ${ids.size} óculos conhecidos pelo SDK")
+                for (id in ids) {
+                    if (!acompanhados.add(id)) continue
+                    val metadados = Wearables.devicesMetadata[id] ?: continue
+                    lifecycleScope.launch {
+                        metadados.collect { d ->
+                            Log.i(TAG, "diagnóstico: óculos '${d.name}' tipo=${d.deviceType} firmware=${d.firmwareInfo} " +
+                                "compatibilidade=${d.compatibility} conexão=${d.linkState} bateria=${d.batteryLevel}")
+                            when (d.compatibility) {
+                                DeviceCompatibility.DEVICE_UPDATE_REQUIRED ->
+                                    estado.update { it.copy(oculos = "óculos: firmware precisa de atualização (toque em Atualizar)") }
+                                DeviceCompatibility.SDK_UPDATE_REQUIRED ->
+                                    estado.update { it.copy(oculos = "óculos: o SDK do app é velho para estes óculos") }
+                                else -> {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Para o erro DAT_APP_ON_THE_GLASSES_UPDATE_REQUIRED: abre no Meta AI a atualização do
+     * app do SDK que roda nos óculos (não é o firmware). Se não der, abre a do firmware.
+     */
+    private fun atualizarOculos() {
+        if (!prepararSdkOculos()) return
+        Wearables.openDATGlassesAppUpdate(this)
+            .onSuccess { Log.i(TAG, "diagnóstico: abriu a atualização do app dos óculos") }
+            .onFailure { e, _ ->
+                Log.w(TAG, "diagnóstico: openDATGlassesAppUpdate falhou: ${e.description}; tentando o firmware")
+                Wearables.openFirmwareUpdate(this)
+                    .onSuccess { Log.i(TAG, "diagnóstico: abriu a atualização de firmware") }
+                    .onFailure { e2, _ ->
+                        Log.w(TAG, "diagnóstico: openFirmwareUpdate falhou: ${e2.description}")
+                        estado.update { it.copy(oculos = "óculos: não abriu a atualização (${e.description})") }
+                    }
+            }
     }
 
     private fun aoChegarFrame(bitmap: android.graphics.Bitmap, tMs: Long) {
@@ -319,6 +389,7 @@ private fun Tela(
     fonteInicial: String,
     aoTrocarFonte: (String) -> Unit,
     aoRegistrar: () -> Unit,
+    aoAtualizarOculos: () -> Unit,
     aoParar: () -> Unit,
 ) {
     var endereco by remember { mutableStateOf(enderecoInicial) }
@@ -381,8 +452,13 @@ private fun Tela(
                 for (f in FONTES) {
                     FilterChip(selected = fonte == f, onClick = { fonte = f; aoTrocarFonte(f) }, label = { Text(f) })
                 }
-                Spacer(Modifier.weight(1f))
-                if (fonte == "óculos") OutlinedButton(onClick = aoRegistrar) { Text("Registrar") }
+            }
+            // linha própria: ao lado das fontes, não cabia na largura do celular
+            if (fonte == "óculos") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = aoRegistrar, modifier = Modifier.weight(1f)) { Text("Registrar") }
+                    OutlinedButton(onClick = aoAtualizarOculos, modifier = Modifier.weight(1f)) { Text("Atualizar óculos") }
+                }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (r in MAPAS.keys) {

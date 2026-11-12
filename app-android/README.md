@@ -62,7 +62,7 @@ Na tela, escolha a fonte:
 | `óculos` | Ray-Ban Meta pelo SDK, a 360x640 e 15 fps | O uso de verdade |
 
 Para os óculos de verdade, uma vez só:
-1. No app Meta AI: **Configurações > Informações do app**, tocar 5 vezes no **número da versão** e ligar o **Developer Mode** ([Meta](https://wearables.developer.meta.com/docs/develop/dat/getting-started-toolkit/)). Com ele, o app roda sem ID do Wearables Developer Center (`"0"` em `app/build.gradle.kts`).
+1. No app Meta AI: **Configurações > Informações do app**, tocar 5 vezes no **número da versão** e ligar o **Developer Mode** ([Meta](https://wearables.developer.meta.com/docs/develop/dat/getting-started-toolkit/)). Com ele, o app roda sem ID do Wearables Developer Center (valores vazios em `app/build.gradle.kts`, como no app de exemplo da Meta).
 2. Óculos pareados e conectados no Meta AI.
 3. No nosso app, fonte `óculos` e **Registrar**: abre o Meta AI para aprovar. Depois, o Meta AI pede a permissão de câmera dos óculos.
 

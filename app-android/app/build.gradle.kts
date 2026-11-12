@@ -17,10 +17,12 @@ android {
     versionCode = 1
     versionName = "0.1"
 
-    // SDK dos óculos: com o Developer Mode ligado no app Meta AI, os dois valem "0".
-    // Sem Developer Mode, vêm do projeto no Wearables Developer Center.
-    manifestPlaceholders["mwdat_application_id"] = "0"
-    manifestPlaceholders["mwdat_client_token"] = "0"
+    // SDK dos óculos: com o Developer Mode ligado no app Meta AI, os dois ficam vazios,
+    // como no app de exemplo da Meta (samples/CameraAccess). Vazios ou "0", o SDK avisa
+    // "Failed to read metadata... APPLICATION_ID" no log e funciona assim mesmo (visto em
+    // 05/11/2026). Sem Developer Mode, vêm do projeto no Wearables Developer Center.
+    manifestPlaceholders["mwdat_application_id"] = ""
+    manifestPlaceholders["mwdat_client_token"] = ""
   }
 
   buildFeatures { compose = true }

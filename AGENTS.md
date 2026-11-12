@@ -39,7 +39,7 @@ Tudo do Python roda **de dentro de `mvp-gesto/`** e com o ambiente virtual ativo
 ```
 cd mvp-gesto
 python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-python -m unittest                  # 46 testes, ~8 s; rodar antes de todo commit que mexe em Python
+python -m unittest                  # 49 testes, ~13 s; rodar antes de todo commit que mexe em Python
 python ponte.py --robo mock         # terminal 1
 python gesto_webcam.py              # terminal 2 (webcam)
 python gesto_webcam.py --video x.mp4 --ponte nenhuma --log x.csv   # medir em vídeo gravado

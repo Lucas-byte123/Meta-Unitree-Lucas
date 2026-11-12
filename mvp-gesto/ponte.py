@@ -152,7 +152,10 @@ class RoboGo2WebRTC:
     normal e MCF (firmware >= 1.1.7).
     Não rodado num robô ainda.
     """
-    PRAZO_S = 2.0          # resposta de um comando
+    PRAZO_S = 2.0          # resposta de StopMove e do envio de Move
+    # O Go2 (firmware 1.1.7, modo mcf) só responde ao truque quando acaba: o Hello
+    # passou de 2 s no robô em 05/11/2026 (o Sit coube). O tempo real fica no log.
+    PRAZO_TRUQUE_S = 8.0
     PRAZO_CONEXAO_S = 30.0
 
     def __init__(self, ip=None, chave_aes=None, modo="sta"):
@@ -179,12 +182,15 @@ class RoboGo2WebRTC:
         if pc is None or pc.connectionState != "connected":
             raise ConnectionError(f"WebRTC sem conexão com o robô ({pc.connectionState if pc else 'fechada'})")
 
-    def _enviar(self, nome, parametro=None):
+    def _enviar(self, nome, parametro=None, prazo=None):
         self._conferir_conexao()
         opcoes = {"api_id": self._cmd[nome]}
         if parametro is not None:
             opcoes["parameter"] = parametro
-        resposta = self._rodar(self.conn.datachannel.pub_sub.publish_request_new(self._topico, opcoes), self.PRAZO_S)
+        inicio = time.monotonic()
+        resposta = self._rodar(self.conn.datachannel.pub_sub.publish_request_new(self._topico, opcoes),
+                               prazo or self.PRAZO_S)
+        log.info("robô respondeu %s em %.2f s", nome, time.monotonic() - inicio)
         try:
             codigo = resposta["data"]["header"]["status"]["code"]
         except (KeyError, TypeError):
@@ -193,7 +199,7 @@ class RoboGo2WebRTC:
             raise RuntimeError(f"robô recusou {nome} (código {codigo})")
 
     def executar(self, acao):
-        self._enviar(self.acoes[acao])
+        self._enviar(self.acoes[acao], prazo=self.PRAZO_TRUQUE_S)
 
     def mover(self, vx, vy, giro):
         self._conferir_conexao()
@@ -335,20 +341,40 @@ class Ponte:
                 self.ultimo_heartbeat = None
                 await self._parar_sem_derrubar()
 
+    async def _responder(self, ws, msg):
+        try:
+            resp = await self.tratar(msg)
+        except Exception as e:  # erro do SDK
+            log.exception("falha")
+            # TimeoutError tem str() vazio: manda o tipo para o erro não chegar em branco
+            resp = {"tipo": "ack", "ok": False, "erro": str(e) or type(e).__name__}
+        if resp:
+            try:
+                await ws.send(json.dumps(resp, ensure_ascii=False))
+            except Exception:
+                log.warning("não deu para mandar o ack (cliente saiu?)")
+
     async def conexao(self, ws):
         log.info("cliente conectado: %s", ws.remote_address)
+        # Truques esperam a resposta do robô (o Go2 leva ~1 s para responder ao Sit).
+        # Rodam à parte, para o laço continuar lendo heartbeat e "parar" enquanto isso:
+        # antes, o vigia via o heartbeat sumir no meio do truque e mandava StopMove,
+        # o que fazia o Go2 sentar e levantar em seguida (visto no robô em 05/11/2026).
+        truques = set()
         try:
             async for bruto in ws:
                 try:
-                    resp = await self.tratar(json.loads(bruto))
+                    msg = json.loads(bruto)
                 except json.JSONDecodeError:
                     log.warning("mensagem não é JSON: %.80r", bruto)
-                    resp = {"tipo": "ack", "ok": False, "erro": "JSON inválido"}
-                except Exception as e:  # erro do SDK
-                    log.exception("falha")
-                    resp = {"tipo": "ack", "ok": False, "erro": str(e)}
-                if resp:
-                    await ws.send(json.dumps(resp, ensure_ascii=False))
+                    await ws.send(json.dumps({"tipo": "ack", "ok": False, "erro": "JSON inválido"}))
+                    continue
+                if isinstance(msg, dict) and msg.get("tipo") == "acao" and msg.get("acao") in self.robo.TRUQUES:
+                    tarefa = asyncio.create_task(self._responder(ws, msg))
+                    truques.add(tarefa)
+                    tarefa.add_done_callback(truques.discard)
+                else:
+                    await self._responder(ws, msg)
         finally:
             log.info("cliente desconectado -> parar")
             self.ultimo_heartbeat = None
