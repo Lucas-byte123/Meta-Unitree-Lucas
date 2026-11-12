@@ -15,7 +15,7 @@
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="true">
 
-        <!-- SDK dos óculos: "0" com o Developer Mode (valores em app/build.gradle.kts) -->
+        <!-- SDK dos óculos: vazios com o Developer Mode (valores em app/build.gradle.kts) -->
         <meta-data
             android:name="com.meta.wearable.mwdat.APPLICATION_ID"
             android:value="${mwdat_application_id}" />

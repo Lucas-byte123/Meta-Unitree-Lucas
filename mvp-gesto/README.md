@@ -52,7 +52,7 @@ cd mvp-gesto
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python -m unittest          # 46 testes, ~8 s
+python -m unittest          # 49 testes, ~13 s
 ```
 
 O modelo de gestos (`gesture_recognizer.task`) é baixado sozinho na primeira execução do `gesto_webcam.py`.
@@ -130,7 +130,10 @@ python gesto_webcam.py --video gravado.mp4 --ponte nenhuma --log gravado.csv   #
 - Testes do filtro e da ponte passando (`python -m unittest`).
 - Testado de ponta a ponta sem webcam: um vídeo montado com fotos de exemplo do MediaPipe passou pelo `gesto_webcam.py` com o MediaPipe real até a ponte em `mock` (3 truques aceitos, gesto fora do mapa ignorado), e um cliente WebSocket conferiu expiração do movimento, limite de velocidade, ação recusada e parada por heartbeat.
 - Testado com a webcam ao vivo em 12/10/2026, com a ponte em `mock`: o roteiro acima funcionou.
-- **Ainda não rodou num robô.** As classes Go2 e G1 seguem os exemplos oficiais do SDK.
+- **`go2-webrtc` testado no robô em 05/11/2026** (Go2 comum, firmware 1.1.7, modo `mcf`, laptop Windows): `checar_go2.py` conecta; `sentar`, `levantar`, `cumprimentar` e `parar` funcionam pelo `teclado.py` e pelos gestos dos óculos. O robô só confirma um truque quando termina (`Hello` ~4,7 s), por isso o prazo dos truques é 8 s. Movimento (`frente`, girar) e queda da ponte ainda não testados.
+- Corrigido nesse teste: enquanto esperava um truque, a ponte parava de ler o heartbeat, o vigia mandava `StopMove` e o Go2 sentava e levantava em seguida.
+- As classes `go2` e `g1` (SDK oficial, DDS) ainda não rodaram num robô; seguem os exemplos oficiais.
+- No Windows, rode o Python com `PYTHONUTF8=1`: sem isso a biblioteca WebRTC quebra ao imprimir emoji no terminal.
 
 ## Segurança
 

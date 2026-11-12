@@ -103,6 +103,14 @@ class TestRoboGo2WebRTC(unittest.TestCase):
             with self.assertRaises(Exception):
                 self.robo.parar()
 
+    def test_truque_usa_prazo_proprio(self):
+        # o Hello passa de 2 s no robô real: o truque tem prazo maior que o StopMove
+        self.assertGreater(RoboGo2WebRTC.PRAZO_TRUQUE_S, RoboGo2WebRTC.PRAZO_S)
+        self.conn.travar = True
+        with mock.patch.object(RoboGo2WebRTC, "PRAZO_TRUQUE_S", 0.1):
+            with self.assertRaises(Exception):
+                self.robo.executar("cumprimentar")
+
     def test_conexao_caida_e_erro(self):
         self.conn.pc.connectionState = "failed"
         with self.assertRaises(ConnectionError):

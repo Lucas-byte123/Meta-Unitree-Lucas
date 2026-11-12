@@ -214,6 +214,43 @@ class TestPonte(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.robo.chamadas[-1], ("parar",))
         self.assertFalse(self.ponte.em_movimento())
 
+    def truque_lento(self, segundos=0.4):
+        # como o Go2 real, que leva ~1 s para responder ao Sit (o mock registra no fim)
+        rapido = self.robo.executar
+
+        def executar_lento(acao):
+            import time
+            time.sleep(segundos)
+            rapido(acao)
+
+        self.robo.executar = executar_lento
+
+    async def test_heartbeat_continua_valendo_durante_truque_lento(self):
+        # bug visto no robô em 05/11/2026: o laço parava de ler o heartbeat enquanto
+        # esperava o truque, o vigia mandava StopMove e o Go2 sentava e levantava
+        self.truque_lento()
+        msgs = ([{"tipo": "heartbeat"}, {"tipo": "acao", "acao": "sentar", "id": "s"}]
+                + [{"tipo": "heartbeat"}] * 12)
+        vigia = asyncio.create_task(self.ponte.vigia_heartbeat())
+        try:
+            ws = FakeWS(msgs, intervalo=0.05)
+            await self.ponte.conexao(ws)
+        finally:
+            vigia.cancel()
+        # o único parar é o da desconexão, depois do truque
+        self.assertEqual(self.robo.chamadas, [("executar", "sentar"), ("parar",)])
+        self.assertEqual([r["ok"] for r in ws.enviadas], [True])
+
+    async def test_parar_passa_durante_truque_lento(self):
+        self.truque_lento()
+        ws = FakeWS([{"tipo": "acao", "acao": "sentar", "id": "s"},
+                     {"tipo": "acao", "acao": "parar", "id": "p"}], intervalo=0.05)
+        await self.ponte.conexao(ws)
+        # o parar chegou ao robô antes de o truque terminar, e o ack dele saiu primeiro
+        self.assertEqual(self.robo.chamadas[0], ("parar",))
+        self.assertEqual(ws.enviadas[0]["id"], "p")
+        await asyncio.sleep(0.5)  # deixa o truque terminar antes de o teste acabar
+
     async def test_json_invalido_responde_erro(self):
         class WSQuebrado(FakeWS):
             async def _gerar(self):
